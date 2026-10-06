@@ -14,5 +14,6 @@ DB_URL = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME
 def get_engine():
     return create_engine(DB_URL)
 
+
 def get_raw_connection():
     return psycopg.connect(DB_URL)

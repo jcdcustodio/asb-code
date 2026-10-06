@@ -11,7 +11,7 @@ wheels/
 
 # Folders
 _project-cfg
-data
+data/raw
 
 # VS Code settings
 .code-workspace
