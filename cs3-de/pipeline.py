@@ -2,7 +2,7 @@ import argparse
 import time
 from pathlib import Path
 from ingest_oltp import run_oltp_ingestion
-from check_quality import run_data_quality_suite
+from check_quality import run_quality_check
 from db_util import *
 
 
@@ -49,7 +49,7 @@ def run_pipeline(data_directory: Path):
     execute_query(Path("sql/olap/07_load_facts.sql").resolve())
 
     # 7. Run Data Quality Checks
-    run_data_quality_suite()
+    run_quality_check()
 
     print("===================================================")
     print("     PIPELINE EXECUTION COMPLETED SUCCESSFULLY     ")

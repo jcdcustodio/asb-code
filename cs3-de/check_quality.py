@@ -43,7 +43,7 @@ ASSERTIONS = [
 ]
 
 
-def run_data_quality_suite():
+def run_quality_check():
     print("--- Running Data Quality Assurance Checks ---")
     with get_pg_connection() as conn, conn.cursor() as cur:
         for query, error_msg in ASSERTIONS:
@@ -56,4 +56,4 @@ def run_data_quality_suite():
 
 
 if __name__ == "__main__":
-    run_data_quality_suite()
+    run_quality_check()
