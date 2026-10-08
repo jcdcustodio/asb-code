@@ -8,7 +8,6 @@ from db_util import *
 
 CHUNKSIZE = BASE_CHUNKSIZE
 
-# Priority-ordered dependencies: Parents must load before children
 INGESTION_TABLES = [
     ("Application.Countries.csv", "countries"),
     ("Application.StateProvinces.csv", "state_provinces"),
@@ -181,7 +180,21 @@ def normalize_name(name: str) -> str:
 
 def run_oltp_ingestion(data_dir: Path) -> None:
     start_time = time.time()
-    for data_file, table_name in INGESTION_TABLES:
+
+    # Discover all raw data files present in the directory
+    data_files = {p.name for p in data_dir.glob("*.csv")}
+
+    # Filter based on tables present in the database
+    input_tables = [
+        (filename, table_name)
+        for filename, table_name in INGESTION_TABLES
+        if filename in data_files
+    ]
+    if not input_tables:
+        print(f"No matching files found in {data_dir}.")
+        return
+
+    for data_file, table_name in input_tables:
         ingest_data(data_dir / data_file, table_name)
 
     elapsed = time.time() - start_time
