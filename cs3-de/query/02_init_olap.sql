@@ -1,13 +1,13 @@
 CREATE SCHEMA IF NOT EXISTS olap;
 
--- 1. Date Dimension
+-- Date Dimension
 CREATE TABLE IF NOT EXISTS olap.dim_date (
     date_key INT PRIMARY KEY,   -- YYYYMMDD
     full_date DATE NOT NULL,
     day_of_month INT NOT NULL,
-    day_name VARCHAR(10) NOT NULL,
+    day_name TEXT NOT NULL,
     calendar_month INT NOT NULL,
-    calendar_month_name VARCHAR(15) NOT NULL,
+    calendar_month_name TEXT NOT NULL,
     calendar_quarter INT NOT NULL,
     calendar_year INT NOT NULL,
     fiscal_month INT NOT NULL,
@@ -16,51 +16,51 @@ CREATE TABLE IF NOT EXISTS olap.dim_date (
     is_weekend BOOLEAN NOT NULL
 );
 
--- 2. Geography Dimension
+-- Geography Dimension
 CREATE TABLE IF NOT EXISTS olap.dim_city (
     city_sk SERIAL PRIMARY KEY,
     city_id INT NOT NULL,
-    city_name VARCHAR(100) NOT NULL,
-    state_province_code VARCHAR(10) NOT NULL,
-    state_province_name VARCHAR(100) NOT NULL,
-    country_name VARCHAR(100) NOT NULL,
-    sales_territory VARCHAR(50)
+    city_name TEXT NOT NULL,
+    state_province_code TEXT NOT NULL,
+    state_province_name TEXT NOT NULL,
+    country_name TEXT NOT NULL,
+    sales_territory TEXT
 );
 
--- 3. Customer Dimension (SCD Type 2)
+-- Customer Dimension (SCD Type 2)
 CREATE TABLE IF NOT EXISTS olap.dim_customer (
     customer_sk SERIAL PRIMARY KEY,
     customer_id INT NOT NULL,   -- Natural Key
-    customer_name VARCHAR(150) NOT NULL,
-    category_name VARCHAR(100) NOT NULL,
-    buying_group_name VARCHAR(100),
-    delivery_city_name VARCHAR(100),
+    customer_name TEXT NOT NULL,
+    category_name TEXT NOT NULL,
+    buying_group_name TEXT,
+    delivery_city_name TEXT,
     valid_from TIMESTAMP WITH TIME ZONE NOT NULL,
     valid_to TIMESTAMP WITH TIME ZONE NOT NULL,
     is_current BOOLEAN NOT NULL
 );
 
--- 4. Stock Item Dimension (SCD Type 1 for simplicity)
+-- Stock Item Dimension (SCD Type 1 for simplicity)
 CREATE TABLE IF NOT EXISTS olap.dim_stock_item (
     stock_item_sk SERIAL PRIMARY KEY,
     stock_item_id INT NOT NULL,
-    stock_item_name VARCHAR(150) NOT NULL,
-    brand VARCHAR(50),
-    color_name VARCHAR(50),
-    package_type_name VARCHAR(50),
+    stock_item_name TEXT NOT NULL,
+    brand TEXT,
+    color_name TEXT,
+    package_type_name TEXT,
     unit_price NUMERIC(18, 2),
     tax_rate NUMERIC(18, 3)
 );
 
--- 5. Employee Dimension
+-- Employee Dimension
 CREATE TABLE IF NOT EXISTS olap.dim_employee (
     employee_sk SERIAL PRIMARY KEY,
     employee_id INT NOT NULL,
-    full_name VARCHAR(150) NOT NULL,
+    full_name TEXT NOT NULL,
     is_salesperson BOOLEAN
 );
 
--- 6. Fact Order
+-- Fact Order
 CREATE TABLE IF NOT EXISTS olap.fact_order (
     order_line_sk SERIAL PRIMARY KEY,
     order_id INT NOT NULL,
@@ -77,7 +77,7 @@ CREATE TABLE IF NOT EXISTS olap.fact_order (
     extended_price_incl_tax NUMERIC(18, 2)
 );
 
--- 7. Fact Sale (Invoice Line Grain)
+-- Fact Sale (Invoice Line Grain)
 CREATE TABLE IF NOT EXISTS olap.fact_sale (
     sale_line_sk SERIAL PRIMARY KEY,
     invoice_id INT NOT NULL,
