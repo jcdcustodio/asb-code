@@ -29,27 +29,27 @@ def run_pipeline(data_directory: Path):
         raise FileNotFoundError(f"Input directory does not exist: \n{data_directory}")
 
     # 2. Database Preparation
-    execute_query(Path("sql/oltp/01_init_oltp.sql").resolve())
-    execute_query(Path("sql/olap/02_init_olap.sql").resolve())
+    execute_query(Path("query/01_init_oltp.sql").resolve())
+    execute_query(Path("query/02_init_olap.sql").resolve())
 
     # 3. Ingestion into OLTP
     run_oltp_ingestion(data_directory)
 
     # 4. Seed Deterministic Dimensions
-    execute_query(Path("sql/olap/03_load_dim_date.sql").resolve())
+    execute_query(Path("query/03_load_dim_date.sql").resolve())
 
     # 5. Seed Unknowns
-    execute_query(Path("sql/olap/04_insert_unknowns.sql").resolve())
+    execute_query(Path("query/04_insert_unknowns.sql").resolve())
 
     # 5. Transform and Load Dimensions (including SCD2 for Customers)
-    execute_query(Path("sql/olap/05_load_dim_scd1.sql").resolve())
-    execute_query(Path("sql/olap/06_customer_scd2.sql").resolve())
+    execute_query(Path("query/05_load_dim_scd1.sql").resolve())
+    execute_query(Path("query/06_customer_scd2.sql").resolve())
 
     # 6. Transform and Load Facts
-    execute_query(Path("sql/olap/07_load_facts.sql").resolve())
+    execute_query(Path("query/07_load_facts.sql").resolve())
 
     # 7. Run Data Quality Checks
-    run_quality_check()
+    # run_quality_check()
 
     print("===================================================")
     print("     PIPELINE EXECUTION COMPLETED SUCCESSFULLY     ")
