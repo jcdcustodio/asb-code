@@ -1,7 +1,12 @@
+import re
+import time
 import polars as pl
 from pathlib import Path
-from db_util import get_engine, get_raw_connection
+from tqdm import tqdm
+from db_util import *
 
+
+CHUNKSIZE = BASE_CHUNKSIZE
 
 # Priority-ordered dependencies: Parents must load before children
 INGESTION_TABLES = [
@@ -21,54 +26,157 @@ INGESTION_TABLES = [
     ("Sales.InvoiceLines.csv", "invoice_lines"),
 ]
 
+TABLE_CONFIG = {
+    "cities": {
+        "latitude": {"type": "coordinate"},
+        "longitude": {"type": "coordinate"},
+    },
+    "customers": {
+        "account_opened_date": {"type": "date", "format": "%Y-%m-%d"},
+        "delivery_location_lat": {"type": "coordinate"},
+        "delivery_location_long": {"type": "coordinate"},
+    },
+    "orders": {
+        "order_date": {"type": "date", "format": "%Y-%m-%d"},                   
+        "expected_delivery_date": {"type": "date", "format": "%Y-%m-%d"},       
+        "picking_completed_when": {"type": "datetime", "format": "%Y-%m-%d %H:%M:%S"}
+    },
+    "order_lines": {
+        "picking_completed_when": {"type": "datetime", "format": "%Y-%m-%d %H:%M:%S"}
+    },
+    "invoices": {
+        "invoice_date": {"type": "date", "format": "%Y-%m-%d"},                 
+        "confirmed_delivery_time": {"type": "datetime", "format": "%Y-%m-%d %H:%M:%S"}
+    }
+}
 
-def clean_and_ingest_file(csv_path: Path, table_name: str):
-    if not csv_path.exists():
-        raise FileNotFoundError(f"Missing required source file: {csv_path}")
 
-    # Read CSV; infer null values on common edge-case strings
-    df = pl.read_csv(
-        csv_path,
-        null_values=["", "NULL", "N/A", "null", "None"],
-        ignore_errors=True
+def ingest_data(data_path: Path, table_name: str) -> None:
+    if not data_path.exists():
+        raise FileNotFoundError(f"Missing required source file: {data_path}")
+
+    # Get row count without reading or parsing full contents
+    total_rows = (
+        pl.scan_csv(data_path, ignore_errors=True)
+        .select(pl.len())
+        .collect()
+        .item()
     )
-    
-    # Strip spaces from column headers
-    df = df.rename({col: col.strip() for col in df.columns})
 
-    engine = get_engine()
-    
-    # Bulk insertion into database
-    # Using 'append' to respect table definitions from 01_init_oltp.sql
-    df.to_pandas().to_sql(
-        name=table_name,
-        schema="oltp",
-        con=engine,
-        if_exists="append",
-        index=False,
-        chunksize=10_000,
-        method="multi"
+    # Create iterator that reads raw data in chunks
+    data_iter = (
+        pl.scan_csv(
+            data_path,
+            separator=";",
+            null_values=["", "NULL", "N/A", "null", "None"],
+            ignore_errors=True
+        ).collect_batches(chunk_size=CHUNKSIZE)
     )
 
-    # Record operational metadata
-    with get_raw_connection() as conn:
-        with conn.cursor() as cur:
+    total_records = 0
+    copy_sql = None
+
+    with get_pg_connection() as conn, conn.cursor() as cur:
+        with tqdm(
+            total=total_rows,
+            desc=f"Ingesting {table_name:<20}",
+            unit="rows",
+            unit_scale=True,
+            dynamic_ncols=True,
+            colour="green"
+        ) as pbar:
+
+            for batch_index, raw_chunk in enumerate(data_iter):
+                # Normalize column names
+                chunk = raw_chunk.rename({col: normalize_name(col) for col in raw_chunk.columns})
+
+                # Apply specific datatype casting
+                chunk = wrangler(chunk=chunk, table_name=table_name)
+
+                # Prepare column names on the initial batch
+                if batch_index == 0:
+                    columns_sql = ", ".join(f'"{c}"' for c in chunk.columns)
+                    copy_sql = f"COPY oltp.{table_name} ({columns_sql}) FROM STDIN"
+
+                # Stream binary tuples to Postgres via COPY
+                with cur.copy(copy_sql) as copy:
+                    for row in chunk.iter_rows():
+                        copy.write_row(row)
+
+                batch_records = len(chunk)
+                total_records += batch_records
+
+                pbar.update(batch_records)
+
+            # Record ingestion metadata
             cur.execute(
                 """
                 INSERT INTO oltp._ingestion_metadata 
                 (source_file, records_loaded, status) 
                 VALUES (%s, %s, %s);
                 """,
-                (csv_path.name, len(df), "SUCCESS")
+                (data_path.name, total_records, "SUCCESS")
             )
+
         conn.commit()
 
-    print(f"Successfully ingested {len(df):>7} records into oltp.{table_name}")
+
+def wrangler(chunk: pl.DataFrame, table_name: str) -> pl.DataFrame:
+    settings = TABLE_CONFIG.get(table_name)
+    if not settings:
+        return chunk
+
+    edited_cols = []
+    for col_name, col_setting in settings.items():
+        if col_name not in chunk.columns:
+            continue
+
+        # Strip padding to prepare with parsing
+        stripped_col = pl.col(col_name).cast(pl.Utf8).str.strip_chars()
+
+        # Get mapped datatype
+        target_type = col_setting["type"]
+
+        # Handles latitude and longitude
+        if target_type == "coordinate":
+            edited_cols.append(
+                stripped_col.str.replace(",", ".")
+                .cast(pl.Float64, strict=False)
+                .alias(col_name)
+            )
+
+        # Handles date and timestamps
+        if target_type == "date" or target_type == "datetime":
+            fmt = col_setting.get("format")
+            edited_cols.append(
+                stripped_col.str
+                .to_date(format=fmt, strict=False)
+                .alias(col_name)
+            )
+
+    return chunk.with_columns(edited_cols)
 
 
-def run_oltp_ingestion(data_dir: Path):
-    for csv_file, table_name in INGESTION_TABLES:
-        clean_and_ingest_file(data_dir / csv_file, table_name)
+def normalize_name(name: str) -> str:
+    s = name.strip()
+
+    # Insert underscore between lowercase/digit and uppercase
+    s = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s)
+
+    # Insert underscore between acronyms and trailing capitalized words
+    s = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", s)
+
+    return s.lower()
+
+
+def run_oltp_ingestion(data_dir: Path) -> None:
+    start_time = time.time()
+    for data_file, table_name in INGESTION_TABLES:
+        ingest_data(data_dir / data_file, table_name)
+
+    total_duration = time.time() - start_time
+    print("All tables ingested successfully.")
+    print(f"Elapsed time: {total_duration:.2f}s")
 
 
 if __name__ == "__main__":

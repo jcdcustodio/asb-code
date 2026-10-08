@@ -9,11 +9,12 @@ DB_USERNAME = config("POSTGRES_USER", default="user", cast=str)
 DB_PASSWORD = config("POSTGRES_PASSWORD", default="user", cast=str)
 DB_NAME = config("POSTGRES_DB", default="postgres", cast=str)
 DB_URL = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+BASE_CHUNKSIZE = config("CHUNKSIZE", default=10000, cast=int)
 
 
 def get_engine():
     return create_engine(DB_URL)
 
 
-def get_raw_connection():
+def get_pg_connection():
     return psycopg.connect(DB_URL)

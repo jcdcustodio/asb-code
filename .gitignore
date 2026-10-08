@@ -9,12 +9,16 @@ wheels/
 # Virtual environments
 .venv
 
+# VS Code
+.code-workspace
+
+# Jupyter
+.ipynb_checkpoints
+
 # Folders
 _project-cfg
+_old
 data/raw
-
-# VS Code settings
-.code-workspace
 
 # Files
 test.py
