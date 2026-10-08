@@ -1,6 +1,5 @@
 CREATE SCHEMA IF NOT EXISTS oltp;
 
--- Metadata tracking table
 CREATE TABLE IF NOT EXISTS oltp._ingestion_metadata (
     ingest_id SERIAL PRIMARY KEY,
     source_file TEXT NOT NULL,
@@ -109,7 +108,7 @@ CREATE TABLE IF NOT EXISTS oltp.stock_items (
     typical_weight_per_unit NUMERIC(18, 2)
 );
 
--- Transaction Tables
+-- Transaction Tables (With NOT NULL constraints and consistent FKs)
 CREATE TABLE IF NOT EXISTS oltp.orders (
     order_id INT PRIMARY KEY,
     customer_id INT REFERENCES oltp.customers(customer_id),
@@ -117,7 +116,7 @@ CREATE TABLE IF NOT EXISTS oltp.orders (
     picked_by_person_id INT,
     contact_person_id INT,
     backorder_order_id INT,
-    order_date DATE,
+    order_date DATE NOT NULL,
     expected_delivery_date DATE,
     customer_purchase_order_number INT,
     is_undersupply_backordered BOOLEAN,
@@ -129,7 +128,7 @@ CREATE TABLE IF NOT EXISTS oltp.order_lines (
     order_id INT REFERENCES oltp.orders(order_id),
     stock_item_id INT REFERENCES oltp.stock_items(stock_item_id),
     description TEXT,
-    package_type_id INT,
+    package_type_id INT REFERENCES oltp.package_types(package_type_id),
     quantity INT NOT NULL,
     unit_price NUMERIC(18, 2),
     tax_rate NUMERIC(18, 3),
@@ -147,7 +146,7 @@ CREATE TABLE IF NOT EXISTS oltp.invoices (
     accounts_person_id INT,
     salesperson_person_id INT REFERENCES oltp.people(person_id),
     packed_by_person_id INT,
-    invoice_date DATE,
+    invoice_date DATE NOT NULL,
     customer_purchase_order_number INT,
     delivery_instructions TEXT,
     total_dry_items INT,

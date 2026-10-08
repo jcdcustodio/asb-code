@@ -2,7 +2,7 @@ from db_util import get_pg_connection
 
 
 ASSERTIONS = [
-    # SCD Type 2 Integrity: No business key can have more than one active record
+    # SCD2 Integrity: No business key can have more than one active record
     (
         """
         SELECT customer_id, COUNT(*) 
@@ -44,15 +44,15 @@ ASSERTIONS = [
 
 
 def run_quality_check():
-    print("--- Running Data Quality Assurance Checks ---")
+    print("Running data quality assurance checks")
     with get_pg_connection() as conn, conn.cursor() as cur:
         for query, error_msg in ASSERTIONS:
             cur.execute(query)
             results = cur.fetchall()
             if results and (results[0][0] > 0 if len(results[0]) == 1 else len(results) > 0):
-                raise AssertionError(f"CHECK FAILED\n{error_msg}\n-> Details: {results}")
-    print("CHECK PASSED")
-    print("All Data Quality Assertions passed successfully.")
+                raise AssertionError(f"--- CHECK FAILED --- \n{error_msg} \n-> Details: {results}")
+    print("--- CHECK PASSED ---")
+    print("All data quality assertions passed successfully.")
 
 
 if __name__ == "__main__":

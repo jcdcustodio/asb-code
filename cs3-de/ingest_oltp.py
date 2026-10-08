@@ -32,21 +32,21 @@ TABLE_CONFIG = {
         "longitude": {"type": "coordinate"},
     },
     "customers": {
-        "account_opened_date": {"type": "date", "format": "%Y-%m-%d"},
+        "account_opened_date": {"type": "date", "format": "%d/%m/%Y"},
         "delivery_location_lat": {"type": "coordinate"},
         "delivery_location_long": {"type": "coordinate"},
     },
     "orders": {
-        "order_date": {"type": "date", "format": "%Y-%m-%d"},                   
-        "expected_delivery_date": {"type": "date", "format": "%Y-%m-%d"},       
-        "picking_completed_when": {"type": "datetime", "format": "%Y-%m-%d %H:%M:%S"}
+        "order_date": {"type": "date", "format": "%d/%m/%Y"},                   
+        "expected_delivery_date": {"type": "date", "format": "%d/%m/%Y"},       
+        "picking_completed_when": {"type": "datetime", "format": "%Y-%m-%d %H:%M:%S%.f"}
     },
     "order_lines": {
-        "picking_completed_when": {"type": "datetime", "format": "%Y-%m-%d %H:%M:%S"}
+        "picking_completed_when": {"type": "datetime", "format": "%Y-%m-%d %H:%M:%S%.f"}
     },
     "invoices": {
-        "invoice_date": {"type": "date", "format": "%Y-%m-%d"},                 
-        "confirmed_delivery_time": {"type": "datetime", "format": "%Y-%m-%d %H:%M:%S"}
+        "invoice_date": {"type": "date", "format": "%d/%m/%Y"},                 
+        "confirmed_delivery_time": {"type": "datetime", "format": "%Y-%m-%d %H:%M:%S%.f"}
     }
 }
 
@@ -140,17 +140,27 @@ def wrangler(chunk: pl.DataFrame, table_name: str) -> pl.DataFrame:
         # Handles latitude and longitude
         if target_type == "coordinate":
             edited_cols.append(
-                stripped_col.str.replace(",", ".")
+                stripped_col
+                .str.replace(",", ".")
                 .cast(pl.Float64, strict=False)
                 .alias(col_name)
             )
 
-        # Handles date and timestamps
-        if target_type == "date" or target_type == "datetime":
-            fmt = col_setting.get("format")
+        # Handles dates (MM/DD/YYYY)
+        if target_type == "date":
+            fmt = col_setting.get("format", "%Y-%m-%d")
             edited_cols.append(
-                stripped_col.str
-                .to_date(format=fmt, strict=False)
+                stripped_col
+                .str.to_date(format=fmt, strict=False)
+                .alias(col_name)
+            )
+
+        # Handles timestamps (YYYY-MM-DD HH:MM:SS.0000000)
+        if target_type == "datetime":
+            fmt = col_setting.get("format", "%Y-%m-%d %H:%M:%S")
+            edited_cols.append(
+                stripped_col
+                .str.to_datetime(format=fmt, strict=False)
                 .alias(col_name)
             )
 
@@ -174,9 +184,9 @@ def run_oltp_ingestion(data_dir: Path) -> None:
     for data_file, table_name in INGESTION_TABLES:
         ingest_data(data_dir / data_file, table_name)
 
-    total_duration = time.time() - start_time
+    elapsed = time.time() - start_time
     print("All tables ingested successfully.")
-    print(f"Elapsed time: {total_duration:.2f}s")
+    print(f"-> Elapsed time: {elapsed:.2f}s")
 
 
 if __name__ == "__main__":

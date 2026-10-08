@@ -16,13 +16,14 @@ def execute_query(filepath: Path):
         conn.commit()
 
         elapsed = time.time() - start_time
-        print(f"-> Completed in {elapsed:.2f}s")
+        print(f"-> Elapsed time: {elapsed:.2f}s")
 
 
 def run_pipeline(data_directory: Path):
     print("===========================")
     print("     STARTING PIPELINE     ")
     print("===========================")
+    start_time = time.time()
 
     # 1. Source Availability Checks
     if not data_directory.exists():
@@ -49,11 +50,14 @@ def run_pipeline(data_directory: Path):
     execute_query(Path("query/07_load_facts.sql").resolve())
 
     # 7. Run Data Quality Checks
-    # run_quality_check()
+    run_quality_check()
+
+    total_elapsed_time = time.time() - start_time
 
     print("===================================================")
     print("     PIPELINE EXECUTION COMPLETED SUCCESSFULLY     ")
     print("===================================================")
+    print(f"Total elapsed time: {total_elapsed_time:.2f}s")
 
 
 if __name__ == "__main__":

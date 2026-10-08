@@ -5,8 +5,10 @@ INSERT INTO olap.fact_order (
     order_line_id,
     order_date_key,
     customer_sk,
+    city_sk,
     stock_item_sk,
     salesperson_sk,
+    is_undersupply_backordered,
     ordered_quantity,
     unit_price,
     tax_rate,
@@ -19,36 +21,41 @@ SELECT
     ol.order_line_id,
     TO_CHAR(o.order_date, 'YYYYMMDD')::INT AS order_date_key,
     COALESCE(c.customer_sk, 0) AS customer_sk,
+    COALESCE(ci.city_sk, 0) AS city_sk,
     COALESCE(s.stock_item_sk, 0) AS stock_item_sk,
     COALESCE(e.employee_sk, 0) AS salesperson_sk,
+    COALESCE(o.is_undersupply_backordered, FALSE) AS is_undersupply_backordered,
     ol.quantity AS ordered_quantity,
     ol.unit_price,
     ol.tax_rate,
     ROUND(ol.quantity * ol.unit_price * (ol.tax_rate / 100.0), 2) AS tax_amount,
     ROUND(ol.quantity * ol.unit_price, 2) AS extended_price_excl_tax,
-    ROUND(ol.quantity * ol.unit_price * (1 + ol.tax_rate / 100.0), 2) AS extended_price_incl_tax
+    ROUND(ol.quantity * ol.unit_price * (1.0 + ol.tax_rate / 100.0), 2) AS extended_price_incl_tax
 FROM oltp.orders o
 JOIN oltp.order_lines ol ON o.order_id = ol.order_id
--- Point-in-time join to SCD2 customer dim
+-- Join customer to resolve delivery geography
+LEFT JOIN oltp.customers oc ON o.customer_id = oc.customer_id
+-- Resolve geography dimension
+LEFT JOIN olap.dim_city ci ON oc.delivery_city_id = ci.city_id
+-- Point-in-time join using half-open interval
 LEFT JOIN olap.dim_customer c 
     ON o.customer_id = c.customer_id 
-   AND o.order_date >= c.valid_from::DATE 
-   AND o.order_date <= c.valid_to::DATE
-LEFT JOIN olap.dim_stock_item s 
-    ON ol.stock_item_id = s.stock_item_id
-LEFT JOIN olap.dim_employee e 
-    ON o.salesperson_person_id = e.employee_id
-WHERE NOT EXISTS (
-    SELECT 1 FROM olap.fact_order fo WHERE fo.order_line_id = ol.order_line_id
-);
+    AND o.order_date >= c.valid_from::DATE 
+    AND o.order_date < c.valid_to::DATE
+LEFT JOIN olap.dim_stock_item s ON ol.stock_item_id = s.stock_item_id
+LEFT JOIN olap.dim_employee e ON o.salesperson_person_id = e.employee_id
+-- High-performance atomic idempotency 
+ON CONFLICT (order_line_id) DO NOTHING;
 
 -- Load Fact Sales (Invoiced Transactions)
 -- Grain: 1 row per invoice line
 INSERT INTO olap.fact_sale (
     invoice_id,
     invoice_line_id,
+    order_id,
     invoice_date_key,
     customer_sk,
+    city_sk,
     stock_item_sk,
     salesperson_sk,
     invoiced_quantity,
@@ -63,11 +70,13 @@ INSERT INTO olap.fact_sale (
 SELECT 
     i.invoice_id,
     il.invoice_line_id,
+    i.order_id, -- Populates degenerate order reference
     TO_CHAR(i.invoice_date, 'YYYYMMDD')::INT AS invoice_date_key,
     COALESCE(c.customer_sk, 0) AS customer_sk,
+    COALESCE(ci.city_sk, 0) AS city_sk,
     COALESCE(s.stock_item_sk, 0) AS stock_item_sk,
     COALESCE(e.employee_sk, 0) AS salesperson_sk,
-    il.quantity,
+    il.quantity AS invoiced_quantity,
     il.unit_price,
     il.tax_rate,
     il.tax_amount,
@@ -78,15 +87,16 @@ SELECT
 FROM oltp.invoices i
 JOIN oltp.invoice_lines il ON i.invoice_id = il.invoice_id
 LEFT JOIN oltp.orders o ON i.order_id = o.order_id
--- Point-in-time join to SCD2 customer dim
+-- Join customer to resolve delivery geography
+LEFT JOIN oltp.customers oc ON i.customer_id = oc.customer_id
+-- Resolve geography dimension
+LEFT JOIN olap.dim_city ci ON oc.delivery_city_id = ci.city_id
+-- Point-in-time join using half-open interval
 LEFT JOIN olap.dim_customer c 
     ON i.customer_id = c.customer_id 
-   AND i.invoice_date >= c.valid_from::DATE 
-   AND i.invoice_date <= c.valid_to::DATE
-LEFT JOIN olap.dim_stock_item s 
-    ON il.stock_item_id = s.stock_item_id
-LEFT JOIN olap.dim_employee e 
-    ON i.salesperson_person_id = e.employee_id
-WHERE NOT EXISTS (
-    SELECT 1 FROM olap.fact_sale fs WHERE fs.invoice_line_id = il.invoice_line_id
-);
+    AND i.invoice_date >= c.valid_from::DATE 
+    AND i.invoice_date < c.valid_to::DATE
+LEFT JOIN olap.dim_stock_item s ON il.stock_item_id = s.stock_item_id
+LEFT JOIN olap.dim_employee e ON i.salesperson_person_id = e.employee_id
+-- High-performance atomic idempotency (Fixes Bug 4)
+ON CONFLICT (invoice_line_id) DO NOTHING;
