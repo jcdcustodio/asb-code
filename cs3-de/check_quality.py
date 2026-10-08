@@ -52,7 +52,7 @@ def run_quality_check():
             if results and (results[0][0] > 0 if len(results[0]) == 1 else len(results) > 0):
                 raise AssertionError(f"--- CHECK FAILED --- \n{error_msg} \n-> Details: {results}")
     print("--- CHECK PASSED ---")
-    print("All data quality assertions passed successfully.")
+    print("All data quality assertions passed successfully")
 
 
 if __name__ == "__main__":

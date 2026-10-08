@@ -1,2 +1,0 @@
-CustomerID;CustomerName;BillToCustomerID;CustomerCategoryID;BuyingGroupID;PrimaryContactPersonID;AlternateContactPersonID;DeliveryMethodID;DeliveryCityID;CreditLimit;AccountOpenedDate;StandardDiscountPercentage;IsStatementSent;IsOnCreditHold;PaymentDays;PhoneNumber;WebsiteURL;DeliveryAddressLine;DeliveryLocationLat;DeliveryLocationLong
-1;Tailspin Toys (Head Office);1;3;1;1001;1002;3;19586;NULL;01/01/2013;0.000;0;0;7;(308) 555-0100;http://www.tailspintoys.com;1877 Mittal Road;41,4972022;-102,6201979

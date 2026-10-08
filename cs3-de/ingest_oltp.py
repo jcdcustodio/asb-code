@@ -193,6 +193,7 @@ def run_oltp_ingestion(data_dir: Path) -> None:
     if not input_tables:
         print(f"No matching files found in {data_dir}.")
         return
+    print(f"Found {len(input_tables)}/{len(INGESTION_TABLES)} applicable table files to ingest")
 
     for data_file, table_name in input_tables:
         ingest_data(data_dir / data_file, table_name)
