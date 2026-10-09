@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/><style>
+table {border: medium solid #6495ed;border-collapse: collapse;width: 100%;} th{font-family: monospace;border: thin solid #6495ed;padding: 5px;background-color: #D0E3FA;}th{text-align: left;}td{font-family: sans-serif;border: thin solid #6495ed;padding: 5px;text-align: center;}.odd{background:#e8edff;}img{padding:5px; border:solid; border-color: #dddddd #aaaaaa #aaaaaa #dddddd; border-width: 1px 2px 2px 1px; background-color:white;}</style>
+</head>
+<body>
+<table><tr><th colspan="8"><pre><code>-- Verify that past order records are unchanged<br>SELECT <br>    fo.order_id,<br>    fo.order_date_key,<br>    fo.customer_sk,<br>    fo.city_sk,<br>    dc.customer_name,<br>    dc.category_name,<br>    ci.city_name,<br>    dc.is_current<br>FROM olap.fact_order fo<br>JOIN olap.dim_customer dc ON fo.customer_sk = dc.customer_sk<br>JOIN olap.dim_city ci ON fo.city_sk = ci.city_sk<br>WHERE dc.customer_id = 893 AND fo.order_id = 163</code></pre></th></tr><tr><th>order_id</th><th>order_date_key</th><th>customer_sk</th><th>city_sk</th><th>customer_name</th><th>category_name</th><th>city_name</th><th>is_current</th></tr><tr class="odd"><td>163</td><td>20,130,103</td><td>643</td><td>36,271</td><td>Leyla Asef zade</td><td>Novelty Shop</td><td>West Elkton</td><td>false</td></tr>
+<tr><td>163</td><td>20,130,103</td><td>643</td><td>36,271</td><td>Leyla Asef zade</td><td>Novelty Shop</td><td>West Elkton</td><td>false</td></tr>
+</table></body></html>

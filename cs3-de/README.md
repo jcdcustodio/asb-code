@@ -5,6 +5,7 @@ This project implements a [case study from the Analytics Solutions Bootcamp (Jos
 ### Related Links for Discussion
 
 - [Answers to solution questions](docs/discussion.md)
+- [Sample SCD Type 2 processing discussion](docs/scd2-demo-discussion.md)
 - [Sample log for running the pipeline](docs/pipeline_session.log)
 
 ### Reference Links
@@ -40,14 +41,13 @@ docker compose up -d
 uv run pipeline.py
 ```
 
-The database container can be viewed and queried using pgAdmin (defined in the compose file) or with any applicable database management tool e.g. [DBeaver](https://dbeaver.io/).
+The database container can be viewed and queried using [pgAdmin](https://www.pgadmin.org/) (defined in the compose file) or with any applicable database management tool e.g. [DBeaver](https://dbeaver.io/).
 
-## Directory Layout
+## Directory Overview
 
 ```markdown
 cs3-de/
 ├── analytics/                              # Queries for answering sample business questions
-│   ├── results/                            # Sample query results
 ├── data/                                   # Directory for raw data files
 ├── docs/                                   # Discussion notes
 ├── query/                                  # Core pipeline queries
@@ -59,6 +59,7 @@ cs3-de/
 │   ├── 05_load_dim_scd1.sql
 │   ├── 06_customer_scd2.sql
 │   └── 07_load_facts.sql
+├── results/                                # Query results (business questions, SCD Type 2 demo)
 ├── .env                                    # Real key sample, NEVER commit this
 ├── .env-example                            # Template, commit this
 ├── check_quality.py                        # Sample data quality check
@@ -66,7 +67,7 @@ cs3-de/
 ├── db_util.py                              # Database utility functions
 ├── ingest_oltp.py                          # Ingestion script
 ├── inspect_data.ipynb                      # Reference notebook for initial exploration
-└── pipeline.py                             # Orchestration script
+├── pipeline.py                             # Orchestration script
 └── pyproject.toml                          # Project configuration file
 ```
 

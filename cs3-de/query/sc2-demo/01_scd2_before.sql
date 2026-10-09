@@ -3,6 +3,7 @@ SELECT
     customer_id,
     customer_name,
     category_name,
+    buying_group_name,
     delivery_city_name,
     valid_from,
     valid_to,
