@@ -9,8 +9,8 @@
 
 ### How did you translate the normalized OLTP structure into your dimensional model, and what is the grain of each fact table?
 
-`fact_order` – One row per operational customer order line
-`fact_sale` – One row per customer invoice line
+- `fact_order` – One row per operational customer order line
+- `fact_sale` – One row per customer invoice line
 
 ### Which dimension and attributes use SCD Type 2, which use SCD Type 1, and why?
 
