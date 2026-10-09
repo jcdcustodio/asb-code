@@ -114,3 +114,14 @@ flowchart LR
 
 - [View OLTP Schema](docs/diagram-oltp.md)
 - [View OLAP Schema](docs/diagram-olap.md)
+
+### Disclosures
+
+Generative AI tools were utilized in this project.
+
+- Learning Assistance: AI tools were used to guide the author in parsing references and applying the concepts in the module.
+- Drafting: The initial code logic and documentation were authored by the human user.
+- Refinement: AI tools were used to iteratively improve, debug, and optimize the initial drafts.
+- Review & Validation: All AI outputs and suggested modifications were critically reviewed, manually tested, and validated by the author.
+
+The author assumes full responsibility for the final logic, data interpretations, and conclusions presented in this work.
