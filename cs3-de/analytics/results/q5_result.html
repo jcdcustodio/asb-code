@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/><style>
+table {border: medium solid #6495ed;border-collapse: collapse;width: 100%;} th{font-family: monospace;border: thin solid #6495ed;padding: 5px;background-color: #D0E3FA;}th{text-align: left;}td{font-family: sans-serif;border: thin solid #6495ed;padding: 5px;text-align: center;}.odd{background:#e8edff;}img{padding:5px; border:solid; border-color: #dddddd #aaaaaa #aaaaaa #dddddd; border-width: 1px 2px 2px 1px; background-color:white;}</style>
+</head>
+<body>
+<table><tr><th colspan="7"><pre><code>WITH rep_orders AS (<br>    SELECT<br>        salesperson_sk,<br>        COUNT(DISTINCT order_id) AS total_orders,<br>        SUM(extended_price_excl_tax) AS total_ordered_value,<br>        ROUND(AVG(extended_price_excl_tax), 2) AS avg_order_line_value<br>    FROM olap.fact_order<br>    GROUP BY salesperson_sk<br>),<br>rep_sales AS (<br>    SELECT<br>        salesperson_sk,<br>        COUNT(DISTINCT invoice_id) AS total_invoices,<br>        SUM(extended_price_excl_tax) AS total_invoiced_sales,<br>        SUM(line_profit) AS total_profit<br>    FROM olap.fact_sale<br>    GROUP BY salesperson_sk<br>)<br>SELECT<br>    e.employee_id,<br>    e.full_name AS salesperson_name,<br>    COALESCE(ro.total_orders, 0) AS total_orders_managed,<br>    COALESCE(ro.total_ordered_value, 0) AS total_ordered_value,<br>    COALESCE(rs.total_invoices, 0) AS total_invoices_managed,<br>    COALESCE(rs.total_invoiced_sales, 0) AS total_invoiced_sales,<br>    COALESCE(rs.total_profit, 0) AS total_profit_generated<br>FROM olap.dim_employee e<br>LEFT JOIN rep_orders ro ON e.employee_sk = ro.salesperson_sk<br>LEFT JOIN rep_sales rs  ON e.employee_sk = rs.salesperson_sk<br>WHERE e.is_salesperson = TRUE <br>    OR ro.salesperson_sk IS NOT NULL<br>ORDER BY<br>    total_invoiced_sales DESC</code></pre></th></tr><tr><th>employee_id</th><th>salesperson_name</th><th>total_orders_managed</th><th>total_ordered_value</th><th>total_invoices_managed</th><th>total_invoiced_sales</th><th>total_profit_generated</th></tr><tr class="odd"><td>16</td><td>Archer Lamble</td><td>7,532</td><td>18,551,146.95</td><td>7,184</td><td>20,629,803.44</td><td>8,954,101.55</td></tr>
+<tr><td>2</td><td>Kayla Woodcock</td><td>7,475</td><td>18,110,095</td><td>7,160</td><td>20,197,271.36</td><td>8,728,969.3</td></tr>
+<tr class="odd"><td>3</td><td>Hudson Onslow</td><td>7,281</td><td>17,815,605.1</td><td>6,988</td><td>19,906,785.93</td><td>8,672,342.65</td></tr>
+<tr><td>15</td><td>Taj Shand</td><td>7,371</td><td>17,812,364.6</td><td>7,074</td><td>19,882,524.15</td><td>8,613,502.6</td></tr>
+<tr class="odd"><td>6</td><td>Sophia Hinton</td><td>7,349</td><td>17,768,199.25</td><td>7,073</td><td>19,866,023.48</td><td>8,536,821.5</td></tr>
+<tr><td>13</td><td>Hudson Hollinworth</td><td>7,400</td><td>17,716,354.25</td><td>7,079</td><td>19,697,857.73</td><td>8,548,731.5</td></tr>
+<tr class="odd"><td>14</td><td>Lily Code</td><td>7,268</td><td>17,612,639.8</td><td>6,978</td><td>19,650,933.07</td><td>8,529,973.7</td></tr>
+<tr><td>20</td><td>Jack Potter</td><td>7,387</td><td>17,621,145.2</td><td>7,061</td><td>19,628,351.36</td><td>8,505,753.45</td></tr>
+<tr class="odd"><td>7</td><td>Amy Trefl</td><td>7,276</td><td>17,329,344.05</td><td>6,959</td><td>19,293,258.55</td><td>8,343,123.9</td></tr>
+<tr><td>8</td><td>Anthony Grosse</td><td>7,257</td><td>17,300,382.2</td><td>6,954</td><td>19,290,630.38</td><td>8,295,860.75</td></tr>
+</table></body></html>

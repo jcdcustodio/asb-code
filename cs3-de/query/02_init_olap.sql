@@ -67,13 +67,13 @@ CREATE TABLE IF NOT EXISTS olap.dim_employee (
 CREATE TABLE IF NOT EXISTS olap.fact_order (
     order_line_sk SERIAL PRIMARY KEY,
     order_id INT NOT NULL,
-    order_line_id INT NOT NULL UNIQUE,                  -- Enforces idempotency
+    order_line_id INT NOT NULL UNIQUE,
     order_date_key INT REFERENCES olap.dim_date(date_key),
     customer_sk INT REFERENCES olap.dim_customer(customer_sk),
-    city_sk INT REFERENCES olap.dim_city(city_sk),       -- Restores Geographic Star Schema
+    city_sk INT REFERENCES olap.dim_city(city_sk),
     stock_item_sk INT REFERENCES olap.dim_stock_item(stock_item_sk),
     salesperson_sk INT REFERENCES olap.dim_employee(employee_sk),
-    is_undersupply_backordered BOOLEAN,                 -- Directly answers Question 8
+    is_undersupply_backordered BOOLEAN,
     ordered_quantity INT NOT NULL,
     unit_price NUMERIC(18, 2) NOT NULL,
     tax_rate NUMERIC(18, 3) NOT NULL,
@@ -86,11 +86,11 @@ CREATE TABLE IF NOT EXISTS olap.fact_order (
 CREATE TABLE IF NOT EXISTS olap.fact_sale (
     sale_line_sk SERIAL PRIMARY KEY,
     invoice_id INT NOT NULL,
-    invoice_line_id INT NOT NULL UNIQUE,                -- Enforces idempotency
-    order_id INT,                                       -- Degenerate key: links to orders (Question 6 & 7)
+    invoice_line_id INT NOT NULL UNIQUE,
+    order_id INT,
     invoice_date_key INT REFERENCES olap.dim_date(date_key),
     customer_sk INT REFERENCES olap.dim_customer(customer_sk),
-    city_sk INT REFERENCES olap.dim_city(city_sk),       -- Restores Geographic Star Schema (Question 4)
+    city_sk INT REFERENCES olap.dim_city(city_sk),
     stock_item_sk INT REFERENCES olap.dim_stock_item(stock_item_sk),
     salesperson_sk INT REFERENCES olap.dim_employee(employee_sk),
     invoiced_quantity INT NOT NULL,

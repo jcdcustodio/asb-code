@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/><style>
+table {border: medium solid #6495ed;border-collapse: collapse;width: 100%;} th{font-family: monospace;border: thin solid #6495ed;padding: 5px;background-color: #D0E3FA;}th{text-align: left;}td{font-family: sans-serif;border: thin solid #6495ed;padding: 5px;text-align: center;}.odd{background:#e8edff;}img{padding:5px; border:solid; border-color: #dddddd #aaaaaa #aaaaaa #dddddd; border-width: 1px 2px 2px 1px; background-color:white;}</style>
+</head>
+<body>
+<table><tr><th colspan="7"><pre><code>SELECT<br>    c.customer_id,<br>    c.customer_name,<br>    c.category_name AS customer_category,<br>    c.buying_group_name,<br>    COUNT(DISTINCT s.invoice_id) AS total_invoices,<br>    SUM(s.extended_price_excl_tax) AS total_revenue,<br>    SUM(s.line_profit) AS total_profit<br>FROM olap.fact_sale s<br>JOIN olap.dim_customer c ON s.customer_sk = c.customer_sk<br>GROUP BY<br>    c.customer_id,<br>    c.customer_name,<br>    c.category_name,<br>    c.buying_group_name<br>ORDER BY<br>    total_revenue DESC<br>LIMIT 50</code></pre></th></tr><tr><th>customer_id</th><th>customer_name</th><th>customer_category</th><th>buying_group_name</th><th>total_invoices</th><th>total_revenue</th><th>total_profit</th></tr><tr class="odd"><td>149</td><td>Tailspin Toys (Inguadona, MN)</td><td>Novelty Shop</td><td>Tailspin Toys</td><td>126</td><td>438,689.81</td><td>189,277.45</td></tr>
+<tr><td>132</td><td>Tailspin Toys (Minidoka, ID)</td><td>Novelty Shop</td><td>Tailspin Toys</td><td>125</td><td>427,445.57</td><td>185,432.55</td></tr>
+<tr class="odd"><td>977</td><td>Mauno Laurila</td><td>Novelty Shop</td><td>None</td><td>115</td><td>424,324.76</td><td>172,559.8</td></tr>
+<tr><td>580</td><td>Wingtip Toys (Sarversville, PA)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>136</td><td>420,001.08</td><td>188,919.75</td></tr>
+<tr class="odd"><td>954</td><td>Nasrin Omidzadeh</td><td>Supermarket</td><td>None</td><td>124</td><td>416,005.03</td><td>181,555.6</td></tr>
+<tr><td>14</td><td>Tailspin Toys (Long Meadow, MD)</td><td>Novelty Shop</td><td>Tailspin Toys</td><td>117</td><td>414,934.18</td><td>174,221.4</td></tr>
+<tr class="odd"><td>964</td><td>Ingrida Zeltina</td><td>Supermarket</td><td>None</td><td>135</td><td>413,817.88</td><td>189,239.35</td></tr>
+<tr><td>472</td><td>Wingtip Toys (San Jacinto, CA)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>125</td><td>408,524.95</td><td>185,158.65</td></tr>
+<tr class="odd"><td>996</td><td>Laszlo Gardenier</td><td>Gift Store</td><td>None</td><td>108</td><td>407,800.89</td><td>172,134.75</td></tr>
+<tr><td>841</td><td>Camille Authier</td><td>Gift Store</td><td>None</td><td>120</td><td>406,493.27</td><td>173,946.95</td></tr>
+<tr class="odd"><td>1,001</td><td>Dinh Mai</td><td>Computer Store</td><td>None</td><td>127</td><td>406,113.43</td><td>172,153.5</td></tr>
+<tr><td>593</td><td>Wingtip Toys (Cuyamungue, NM)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>125</td><td>405,824.67</td><td>178,329.95</td></tr>
+<tr class="odd"><td>550</td><td>Wingtip Toys (Morrison Bluff, AR)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>113</td><td>404,945.65</td><td>171,513.35</td></tr>
+<tr><td>510</td><td>Wingtip Toys (Grabill, IN)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>120</td><td>403,635.05</td><td>180,712.1</td></tr>
+<tr class="odd"><td>569</td><td>Wingtip Toys (West Frostproof, FL)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>131</td><td>398,563.46</td><td>177,147.55</td></tr>
+<tr><td>874</td><td>Daniel Martensson</td><td>Novelty Shop</td><td>None</td><td>120</td><td>397,893.27</td><td>173,490.95</td></tr>
+<tr class="odd"><td>856</td><td>Satish Mittal</td><td>Corporate</td><td>None</td><td>120</td><td>397,571.38</td><td>179,484.75</td></tr>
+<tr><td>861</td><td>Amarasimha Vinjamuri</td><td>Supermarket</td><td>None</td><td>117</td><td>395,829.74</td><td>165,285.95</td></tr>
+<tr class="odd"><td>102</td><td>Tailspin Toys (Fieldbrook, CA)</td><td>Novelty Shop</td><td>Tailspin Toys</td><td>130</td><td>395,482.71</td><td>163,720.6</td></tr>
+<tr><td>480</td><td>Wingtip Toys (Wapinitia, OR)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>109</td><td>394,690.76</td><td>163,084.6</td></tr>
+<tr class="odd"><td>949</td><td>Seo-yun Paik</td><td>Corporate</td><td>None</td><td>114</td><td>393,305.81</td><td>178,316.2</td></tr>
+<tr><td>185</td><td>Tailspin Toys (Vidrine, LA)</td><td>Novelty Shop</td><td>Tailspin Toys</td><td>129</td><td>391,035.18</td><td>168,068</td></tr>
+<tr class="odd"><td>32</td><td>Tailspin Toys (Maypearl, TX)</td><td>Novelty Shop</td><td>Tailspin Toys</td><td>135</td><td>390,598.17</td><td>166,381</td></tr>
+<tr><td>71</td><td>Tailspin Toys (Good Hart, MI)</td><td>Novelty Shop</td><td>Tailspin Toys</td><td>120</td><td>390,560.21</td><td>172,888.5</td></tr>
+<tr class="odd"><td>198</td><td>Tailspin Toys (Buell, MO)</td><td>Novelty Shop</td><td>Tailspin Toys</td><td>120</td><td>388,351.75</td><td>172,009.3</td></tr>
+<tr><td>565</td><td>Wingtip Toys (Wapiti, WY)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>128</td><td>386,677.73</td><td>159,568.75</td></tr>
+<tr class="odd"><td>546</td><td>Wingtip Toys (Key Biscayne, FL)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>128</td><td>385,311.61</td><td>157,814.75</td></tr>
+<tr><td>67</td><td>Tailspin Toys (Sentinel Butte, ND)</td><td>Novelty Shop</td><td>Tailspin Toys</td><td>132</td><td>385,215.57</td><td>162,170.4</td></tr>
+<tr class="odd"><td>81</td><td>Tailspin Toys (Big Moose, NY)</td><td>Novelty Shop</td><td>Tailspin Toys</td><td>118</td><td>384,621.35</td><td>168,926.2</td></tr>
+<tr><td>541</td><td>Wingtip Toys (Mickleton, NJ)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>121</td><td>382,238.57</td><td>167,186.9</td></tr>
+<tr class="odd"><td>558</td><td>Wingtip Toys (Bourneville, OH)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>131</td><td>382,043.6</td><td>172,196.6</td></tr>
+<tr><td>478</td><td>Wingtip Toys (Stoneboro, PA)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>111</td><td>381,784.52</td><td>162,983.9</td></tr>
+<tr class="odd"><td>834</td><td>Cong Hoa</td><td>Gift Store</td><td>None</td><td>116</td><td>381,238.93</td><td>165,158.95</td></tr>
+<tr><td>982</td><td>Yves Belisle</td><td>Supermarket</td><td>None</td><td>127</td><td>379,748.72</td><td>159,775.05</td></tr>
+<tr class="odd"><td>586</td><td>Wingtip Toys (Lynne, FL)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>126</td><td>377,617.88</td><td>162,102.15</td></tr>
+<tr><td>474</td><td>Wingtip Toys (Bokeelia, FL)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>115</td><td>377,580.5</td><td>161,973.85</td></tr>
+<tr class="odd"><td>804</td><td>Aleksandrs Riekstins</td><td>Computer Store</td><td>None</td><td>139</td><td>377,571.74</td><td>153,504.75</td></tr>
+<tr><td>442</td><td>Wingtip Toys (Homer City, PA)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>116</td><td>377,528.39</td><td>169,988.1</td></tr>
+<tr class="odd"><td>413</td><td>Wingtip Toys (Truscott, TX)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>120</td><td>377,395.35</td><td>164,996.1</td></tr>
+<tr><td>597</td><td>Wingtip Toys (Haycock, AK)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>125</td><td>377,386.35</td><td>167,999.45</td></tr>
+<tr class="odd"><td>94</td><td>Tailspin Toys (Cheyenne Wells, CO)</td><td>Novelty Shop</td><td>Tailspin Toys</td><td>116</td><td>376,640.75</td><td>161,829.4</td></tr>
+<tr><td>583</td><td>Wingtip Toys (Knights Landing, CA)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>125</td><td>376,499.05</td><td>161,495.3</td></tr>
+<tr class="odd"><td>588</td><td>Wingtip Toys (Oak Point, TX)</td><td>Novelty Shop</td><td>Wingtip Toys</td><td>111</td><td>376,167.2</td><td>161,162.45</td></tr>
+<tr><td>65</td><td>Tailspin Toys (North Cowden, TX)</td><td>Novelty Shop</td><td>Tailspin Toys</td><td>121</td><td>376,046.24</td><td>161,912.45</td></tr>
+<tr class="odd"><td>38</td><td>Tailspin Toys (Airport Drive, MO)</td><td>Novelty Shop</td><td>Tailspin Toys</td><td>126</td><td>374,738.45</td><td>162,500</td></tr>
+<tr><td>930</td><td>Shantanu Huq</td><td>Gift Store</td><td>None</td><td>133</td><td>374,359.35</td><td>154,599</td></tr>
+<tr class="odd"><td>941</td><td>Bishwa Chatterjee</td><td>Novelty Shop</td><td>None</td><td>135</td><td>374,230.87</td><td>164,320.25</td></tr>
+<tr><td>7</td><td>Tailspin Toys (Frankewing, TN)</td><td>Novelty Shop</td><td>Tailspin Toys</td><td>129</td><td>374,228.14</td><td>156,998.65</td></tr>
+<tr class="odd"><td>195</td><td>Tailspin Toys (Lesslie, SC)</td><td>Novelty Shop</td><td>Tailspin Toys</td><td>129</td><td>374,025.99</td><td>160,764.1</td></tr>
+<tr><td>870</td><td>In-Su Bae</td><td>Gift Store</td><td>None</td><td>109</td><td>373,914.12</td><td>176,754.05</td></tr>
+</table></body></html>

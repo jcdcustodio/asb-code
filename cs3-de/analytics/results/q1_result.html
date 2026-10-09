@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/><style>
+table {border: medium solid #6495ed;border-collapse: collapse;width: 100%;} th{font-family: monospace;border: thin solid #6495ed;padding: 5px;background-color: #D0E3FA;}th{text-align: left;}td{font-family: sans-serif;border: thin solid #6495ed;padding: 5px;text-align: center;}.odd{background:#e8edff;}img{padding:5px; border:solid; border-color: #dddddd #aaaaaa #aaaaaa #dddddd; border-width: 1px 2px 2px 1px; background-color:white;}</style>
+</head>
+<body>
+<table><tr><th colspan="7"><pre><code>SELECT<br>	d.fiscal_year,<br>	d.calendar_year,<br>	d.calendar_month,<br>	d.calendar_month_name,<br>	SUM(s.invoiced_quantity) AS total_quantity_sold,<br>	SUM(s.extended_price_excl_tax) AS total_sales_excl_tax,<br>	SUM(s.line_profit) AS total_profit<br>FROM olap.fact_sale s<br>JOIN olap.dim_date d ON s.invoice_date_key = d.date_key<br>GROUP BY<br>	d.fiscal_year,<br>	d.calendar_year,<br>	d.calendar_month,<br>	d.calendar_month_name<br>ORDER BY<br>	d.fiscal_year,<br>	d.calendar_month</code></pre></th></tr><tr><th>fiscal_year</th><th>calendar_year</th><th>calendar_month</th><th>calendar_month_name</th><th>total_quantity_sold</th><th>total_sales_excl_tax</th><th>total_profit</th></tr><tr class="odd"><td>2,013</td><td>2,013</td><td>1</td><td>January</td><td>193,271</td><td>4,335,972.97</td><td>1,890,687.8</td></tr>
+<tr><td>2,013</td><td>2,013</td><td>2</td><td>February</td><td>142,120</td><td>3,193,304.6</td><td>1,383,023.3</td></tr>
+<tr class="odd"><td>2,013</td><td>2,013</td><td>3</td><td>March</td><td>207,486</td><td>4,451,081.62</td><td>1,933,679.05</td></tr>
+<tr><td>2,013</td><td>2,013</td><td>4</td><td>April</td><td>212,995</td><td>4,668,548.4</td><td>2,011,957.2</td></tr>
+<tr class="odd"><td>2,013</td><td>2,013</td><td>5</td><td>May</td><td>230,725</td><td>5,080,661.05</td><td>2,231,604.45</td></tr>
+<tr><td>2,013</td><td>2,013</td><td>6</td><td>June</td><td>213,468</td><td>4,679,392.14</td><td>2,003,843.25</td></tr>
+<tr class="odd"><td>2,013</td><td>2,013</td><td>7</td><td>July</td><td>232,599</td><td>5,039,033.18</td><td>2,177,622.75</td></tr>
+<tr><td>2,013</td><td>2,013</td><td>8</td><td>August</td><td>192,199</td><td>4,020,390.18</td><td>1,735,165.7</td></tr>
+<tr class="odd"><td>2,013</td><td>2,013</td><td>9</td><td>September</td><td>190,567</td><td>4,345,897.56</td><td>1,893,782.75</td></tr>
+<tr><td>2,013</td><td>2,013</td><td>10</td><td>October</td><td>198,476</td><td>4,315,500.25</td><td>1,882,507.65</td></tr>
+<tr class="odd"><td>2,014</td><td>2,014</td><td>1</td><td>January</td><td>216,337</td><td>4,677,669.28</td><td>2,045,397.6</td></tr>
+<tr><td>2,014</td><td>2,014</td><td>2</td><td>February</td><td>182,103</td><td>3,990,741.07</td><td>1,723,582.2</td></tr>
+<tr class="odd"><td>2,014</td><td>2,014</td><td>3</td><td>March</td><td>196,451</td><td>4,441,218.55</td><td>1,902,807.75</td></tr>
+<tr><td>2,014</td><td>2,014</td><td>4</td><td>April</td><td>209,020</td><td>4,709,520.43</td><td>2,027,121.1</td></tr>
+<tr class="odd"><td>2,014</td><td>2,014</td><td>5</td><td>May</td><td>239,381</td><td>5,279,235.69</td><td>2,273,988.65</td></tr>
+<tr><td>2,014</td><td>2,014</td><td>6</td><td>June</td><td>223,182</td><td>4,906,641.36</td><td>2,133,969.75</td></tr>
+<tr class="odd"><td>2,014</td><td>2,014</td><td>7</td><td>July</td><td>248,966</td><td>5,504,246.85</td><td>2,391,625.15</td></tr>
+<tr><td>2,014</td><td>2,014</td><td>8</td><td>August</td><td>194,525</td><td>4,698,313.6</td><td>2,009,714.1</td></tr>
+<tr class="odd"><td>2,014</td><td>2,014</td><td>9</td><td>September</td><td>199,954</td><td>4,465,414.61</td><td>1,939,203.4</td></tr>
+<tr><td>2,014</td><td>2,014</td><td>10</td><td>October</td><td>228,840</td><td>5,104,486.71</td><td>2,211,354.4</td></tr>
+<tr class="odd"><td>2,014</td><td>2,013</td><td>11</td><td>November</td><td>194,290</td><td>4,252,081.74</td><td>1,836,923.3</td></tr>
+<tr><td>2,014</td><td>2,013</td><td>12</td><td>December</td><td>193,461</td><td>4,181,408.95</td><td>1,787,555.05</td></tr>
+<tr class="odd"><td>2,015</td><td>2,015</td><td>1</td><td>January</td><td>217,931</td><td>5,061,954.63</td><td>2,228,239.6</td></tr>
+<tr><td>2,015</td><td>2,015</td><td>2</td><td>February</td><td>203,070</td><td>4,824,617.67</td><td>2,112,629.5</td></tr>
+<tr class="odd"><td>2,015</td><td>2,015</td><td>3</td><td>March</td><td>236,872</td><td>5,207,351.93</td><td>2,245,233.95</td></tr>
+<tr><td>2,015</td><td>2,015</td><td>4</td><td>April</td><td>253,471</td><td>5,834,255.09</td><td>2,530,376.7</td></tr>
+<tr class="odd"><td>2,015</td><td>2,015</td><td>5</td><td>May</td><td>223,741</td><td>5,152,840.72</td><td>2,220,597.65</td></tr>
+<tr><td>2,015</td><td>2,015</td><td>6</td><td>June</td><td>223,838</td><td>5,193,217.15</td><td>2,225,717.8</td></tr>
+<tr class="odd"><td>2,015</td><td>2,015</td><td>7</td><td>July</td><td>266,768</td><td>5,929,023.38</td><td>2,582,126.75</td></tr>
+<tr><td>2,015</td><td>2,015</td><td>8</td><td>August</td><td>204,532</td><td>4,528,888.44</td><td>1,962,927.75</td></tr>
+<tr class="odd"><td>2,015</td><td>2,015</td><td>9</td><td>September</td><td>231,852</td><td>5,361,990.68</td><td>2,302,806.3</td></tr>
+<tr><td>2,015</td><td>2,015</td><td>10</td><td>October</td><td>233,207</td><td>5,165,857.34</td><td>2,234,956.5</td></tr>
+<tr class="odd"><td>2,015</td><td>2,014</td><td>11</td><td>November</td><td>195,892</td><td>4,621,813.04</td><td>1,987,334.15</td></tr>
+<tr><td>2,015</td><td>2,014</td><td>12</td><td>December</td><td>232,750</td><td>5,019,615.7</td><td>2,182,364.2</td></tr>
+<tr class="odd"><td>2,016</td><td>2,016</td><td>1</td><td>January</td><td>250,297</td><td>5,103,948.25</td><td>2,225,355.1</td></tr>
+<tr><td>2,016</td><td>2,016</td><td>2</td><td>February</td><td>216,618</td><td>4,596,534.78</td><td>1,975,672.45</td></tr>
+<tr class="odd"><td>2,016</td><td>2,016</td><td>3</td><td>March</td><td>252,408</td><td>5,330,250.56</td><td>2,303,563.6</td></tr>
+<tr><td>2,016</td><td>2,016</td><td>4</td><td>April</td><td>251,945</td><td>5,236,062.81</td><td>2,226,725.85</td></tr>
+<tr class="odd"><td>2,016</td><td>2,016</td><td>5</td><td>May</td><td>270,036</td><td>5,704,232.71</td><td>2,443,448.55</td></tr>
+<tr><td>2,016</td><td>2,015</td><td>11</td><td>November</td><td>220,911</td><td>4,702,590.28</td><td>2,067,029.6</td></tr>
+<tr class="odd"><td>2,016</td><td>2,015</td><td>12</td><td>December</td><td>224,073</td><td>5,127,633.5</td><td>2,244,958.55</td></tr>
+</table></body></html>

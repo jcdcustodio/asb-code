@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/><style>
+table {border: medium solid #6495ed;border-collapse: collapse;width: 100%;} th{font-family: monospace;border: thin solid #6495ed;padding: 5px;background-color: #D0E3FA;}th{text-align: left;}td{font-family: sans-serif;border: thin solid #6495ed;padding: 5px;text-align: center;}.odd{background:#e8edff;}img{padding:5px; border:solid; border-color: #dddddd #aaaaaa #aaaaaa #dddddd; border-width: 1px 2px 2px 1px; background-color:white;}</style>
+</head>
+<body>
+<table><tr><th colspan="7"><pre><code>SELECT<br>    COALESCE(si.brand, 'Unbranded') AS product_category,<br>    si.stock_item_id,<br>    si.stock_item_name,<br>    SUM(s.invoiced_quantity) AS total_units_sold,<br>    SUM(s.extended_price_excl_tax) AS total_sales,<br>    SUM(s.line_profit) AS total_profit,<br>    ROUND(<br>        (SUM(s.line_profit) / NULLIF(SUM(s.extended_price_excl_tax), 0)) * 100.0, 2<br>    ) AS profit_margin_pct<br>FROM olap.fact_sale s<br>JOIN olap.dim_stock_item si <br>    ON s.stock_item_sk = si.stock_item_sk<br>GROUP BY<br>    si.brand,<br>    si.stock_item_id,<br>    si.stock_item_name<br>ORDER BY<br>    total_sales DESC<br>LIMIT 50</code></pre></th></tr><tr><th>product_category</th><th>stock_item_id</th><th>stock_item_name</th><th>total_units_sold</th><th>total_sales</th><th>total_profit</th><th>profit_margin_pct</th></tr><tr class="odd"><td>Unbranded</td><td>215</td><td>Air cushion machine (Blue)</td><td>5,849</td><td>12,773,338.65</td><td>4,439,391</td><td>34.76</td></tr>
+<tr><td>Unbranded</td><td>173</td><td>32 mm Anti static bubble wrap (Blue) 50m</td><td>60,800</td><td>7,341,600</td><td>3,526,400</td><td>48.03</td></tr>
+<tr class="odd"><td>Unbranded</td><td>167</td><td>10 mm Anti static bubble wrap (Blue) 50m</td><td>63,930</td><td>7,278,430.5</td><td>3,452,220</td><td>47.43</td></tr>
+<tr><td>Unbranded</td><td>161</td><td>20 mm Double sided bubble wrap 50m</td><td>57,540</td><td>7,146,468</td><td>5,293,680</td><td>74.07</td></tr>
+<tr class="odd"><td>Unbranded</td><td>164</td><td>32 mm Double sided bubble wrap 50m</td><td>55,270</td><td>7,118,776</td><td>2,929,310</td><td>41.15</td></tr>
+<tr><td>Unbranded</td><td>158</td><td>10 mm Double sided bubble wrap 50m</td><td>56,600</td><td>6,834,450</td><td>2,773,400</td><td>40.58</td></tr>
+<tr class="odd"><td>Unbranded</td><td>170</td><td>20 mm Anti static bubble wrap (Blue) 50m</td><td>56,820</td><td>6,664,986</td><td>2,670,540</td><td>40.07</td></tr>
+<tr><td>Unbranded</td><td>172</td><td>32 mm Anti static bubble wrap (Blue) 20m</td><td>60,420</td><td>3,335,184</td><td>1,510,500</td><td>45.29</td></tr>
+<tr class="odd"><td>Unbranded</td><td>219</td><td>Void fill 400 L bag (White) 400L</td><td>57,430</td><td>3,302,225</td><td>1,378,320</td><td>41.74</td></tr>
+<tr><td>Unbranded</td><td>169</td><td>20 mm Anti static bubble wrap (Blue) 20m</td><td>54,860</td><td>2,839,005</td><td>1,316,640</td><td>46.38</td></tr>
+<tr class="odd"><td>Unbranded</td><td>166</td><td>10 mm Anti static bubble wrap (Blue) 20m</td><td>57,270</td><td>2,766,141</td><td>1,088,130</td><td>39.34</td></tr>
+<tr><td>Unbranded</td><td>218</td><td>Void fill 300 L bag (White) 300L</td><td>57,280</td><td>2,470,200</td><td>1,116,960</td><td>45.22</td></tr>
+<tr class="odd"><td>Unbranded</td><td>163</td><td>32 mm Double sided bubble wrap 20m</td><td>57,530</td><td>2,447,901.5</td><td>1,323,190</td><td>54.05</td></tr>
+<tr><td>Northwind</td><td>75</td><td>Ride on big wheel monster truck (Black) 1/12 scale</td><td>5,770</td><td>2,289,247.5</td><td>807,800</td><td>35.29</td></tr>
+<tr class="odd"><td>Unbranded</td><td>160</td><td>20 mm Double sided bubble wrap 20m</td><td>59,160</td><td>2,245,122</td><td>1,064,880</td><td>47.43</td></tr>
+<tr><td>Unbranded</td><td>171</td><td>32 mm Anti static bubble wrap (Blue) 10m</td><td>58,120</td><td>2,138,816</td><td>929,920</td><td>43.48</td></tr>
+<tr class="odd"><td>Unbranded</td><td>205</td><td>Tape dispenser (Blue)</td><td>57,920</td><td>2,131,456</td><td>868,800</td><td>40.76</td></tr>
+<tr><td>Unbranded</td><td>203</td><td>Tape dispenser (Black)</td><td>57,700</td><td>2,123,360</td><td>865,500</td><td>40.76</td></tr>
+<tr class="odd"><td>Northwind</td><td>74</td><td>Ride on vintage American toy coupe (Black) 1/12 scale</td><td>6,110</td><td>2,002,552.5</td><td>794,300</td><td>39.66</td></tr>
+<tr><td>Unbranded</td><td>157</td><td>10 mm Double sided bubble wrap 20m</td><td>55,810</td><td>1,925,445</td><td>892,960</td><td>46.38</td></tr>
+<tr class="odd"><td>Northwind</td><td>73</td><td>Ride on vintage American toy coupe (Red) 1/12 scale</td><td>5,658</td><td>1,854,409.5</td><td>735,540</td><td>39.66</td></tr>
+<tr><td>Unbranded</td><td>165</td><td>10 mm Anti static bubble wrap (Blue) 10m</td><td>61,000</td><td>1,823,900</td><td>549,000</td><td>30.1</td></tr>
+<tr class="odd"><td>Unbranded</td><td>168</td><td>20 mm Anti static bubble wrap (Blue) 10m</td><td>52,600</td><td>1,754,210</td><td>894,200</td><td>50.97</td></tr>
+<tr><td>Unbranded</td><td>176</td><td>Bubblewrap dispenser (Red) 1.5m</td><td>6,108</td><td>1,685,808</td><td>794,040</td><td>47.1</td></tr>
+<tr class="odd"><td>Unbranded</td><td>217</td><td>Void fill 200 L bag (White) 200L</td><td>56,420</td><td>1,622,075</td><td>507,780</td><td>31.3</td></tr>
+<tr><td>Unbranded</td><td>15</td><td>USB food flash drive - dessert 10 drive variety pack</td><td>5,884</td><td>1,562,118.6</td><td>837,630</td><td>53.62</td></tr>
+<tr class="odd"><td>Unbranded</td><td>88</td><td>"The Gu" red shirt XML tag t-shirt (White) 7XL</td><td>75,336</td><td>1,559,455.2</td><td>715,692</td><td>45.89</td></tr>
+<tr><td>Northwind</td><td>69</td><td>Ride on toy sedan car (Blue) 1/12 scale</td><td>5,881</td><td>1,555,524.5</td><td>499,885</td><td>32.14</td></tr>
+<tr class="odd"><td>Northwind</td><td>72</td><td>Ride on toy sedan car (Pink) 1/12 scale</td><td>5,865</td><td>1,551,292.5</td><td>498,525</td><td>32.14</td></tr>
+<tr><td>Unbranded</td><td>162</td><td>32 mm Double sided bubble wrap 10m</td><td>61,280</td><td>1,550,384</td><td>741,488</td><td>47.83</td></tr>
+<tr class="odd"><td>Northwind</td><td>71</td><td>Ride on toy sedan car (Yellow) 1/12 scale</td><td>5,859</td><td>1,549,705.5</td><td>498,015</td><td>32.14</td></tr>
+<tr><td>Unbranded</td><td>79</td><td>"The Gu" red shirt XML tag t-shirt (White) S</td><td>74,280</td><td>1,537,596</td><td>817,080</td><td>53.14</td></tr>
+<tr class="odd"><td>Northwind</td><td>68</td><td>Ride on toy sedan car (Red) 1/12 scale</td><td>5,788</td><td>1,530,926</td><td>491,980</td><td>32.14</td></tr>
+<tr><td>Unbranded</td><td>148</td><td>Halloween skull mask (Gray) L</td><td>73,896</td><td>1,529,647.2</td><td>221,688</td><td>14.49</td></tr>
+<tr class="odd"><td>Unbranded</td><td>174</td><td>Bubblewrap dispenser (Black) 1.5m</td><td>5,501</td><td>1,518,276</td><td>715,130</td><td>47.1</td></tr>
+<tr><td>Unbranded</td><td>175</td><td>Bubblewrap dispenser (Blue) 1.5m</td><td>5,486</td><td>1,514,136</td><td>713,180</td><td>47.1</td></tr>
+<tr class="odd"><td>Unbranded</td><td>90</td><td>"The Gu" red shirt XML tag t-shirt (Black) XXS</td><td>73,104</td><td>1,513,252.8</td><td>804,144</td><td>53.14</td></tr>
+<tr><td>Northwind</td><td>67</td><td>Ride on toy sedan car (Black) 1/12 scale</td><td>5,688</td><td>1,504,476</td><td>483,480</td><td>32.14</td></tr>
+<tr class="odd"><td>Unbranded</td><td>101</td><td>"The Gu" red shirt XML tag t-shirt (Black) 7XL</td><td>72,636</td><td>1,503,565.2</td><td>690,042</td><td>45.89</td></tr>
+<tr><td>Unbranded</td><td>91</td><td>"The Gu" red shirt XML tag t-shirt (Black) XS</td><td>72,384</td><td>1,498,348.8</td><td>796,224</td><td>53.14</td></tr>
+<tr class="odd"><td>Unbranded</td><td>145</td><td>Halloween zombie mask (Light Brown) XL</td><td>72,372</td><td>1,498,100.4</td><td>-72,372</td><td>-4.83</td></tr>
+<tr><td>Northwind</td><td>70</td><td>Ride on toy sedan car (Green) 1/12 scale</td><td>5,646</td><td>1,493,367</td><td>479,910</td><td>32.14</td></tr>
+<tr class="odd"><td>Unbranded</td><td>155</td><td>Large sized bubblewrap roll 50m</td><td>54,030</td><td>1,491,228</td><td>594,330</td><td>39.86</td></tr>
+<tr><td>Unbranded</td><td>83</td><td>"The Gu" red shirt XML tag t-shirt (White) XXL</td><td>71,904</td><td>1,488,412.8</td><td>754,992</td><td>50.72</td></tr>
+<tr class="odd"><td>Unbranded</td><td>8</td><td>USB food flash drive - dim sum 10 drive variety pack</td><td>5,537</td><td>1,475,220</td><td>792,775.5</td><td>53.74</td></tr>
+<tr><td>Unbranded</td><td>142</td><td>Halloween zombie mask (Light Brown) S</td><td>71,016</td><td>1,470,031.2</td><td>-71,016</td><td>-4.83</td></tr>
+<tr class="odd"><td>Unbranded</td><td>87</td><td>"The Gu" red shirt XML tag t-shirt (White) 6XL</td><td>70,584</td><td>1,461,088.8</td><td>705,840</td><td>48.31</td></tr>
+<tr><td>Unbranded</td><td>146</td><td>Halloween skull mask (Gray) S</td><td>70,416</td><td>1,457,611.2</td><td>211,248</td><td>14.49</td></tr>
+<tr class="odd"><td>Unbranded</td><td>100</td><td>"The Gu" red shirt XML tag t-shirt (Black) 6XL</td><td>70,080</td><td>1,450,656</td><td>700,800</td><td>48.31</td></tr>
+<tr><td>Unbranded</td><td>97</td><td>"The Gu" red shirt XML tag t-shirt (Black) 3XL</td><td>69,252</td><td>1,433,516.4</td><td>692,520</td><td>48.31</td></tr>
+</table></body></html>

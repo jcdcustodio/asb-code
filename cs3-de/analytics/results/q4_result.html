@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/><style>
+table {border: medium solid #6495ed;border-collapse: collapse;width: 100%;} th{font-family: monospace;border: thin solid #6495ed;padding: 5px;background-color: #D0E3FA;}th{text-align: left;}td{font-family: sans-serif;border: thin solid #6495ed;padding: 5px;text-align: center;}.odd{background:#e8edff;}img{padding:5px; border:solid; border-color: #dddddd #aaaaaa #aaaaaa #dddddd; border-width: 1px 2px 2px 1px; background-color:white;}</style>
+</head>
+<body>
+<table><tr><th colspan="6"><pre><code>SELECT<br>    ci.sales_territory,<br>    ci.state_province_name,<br>    ci.city_name,<br>    SUM(s.extended_price_excl_tax) AS total_sales,<br>    SUM(s.line_profit) AS total_profit,<br>    ROUND(<br>        (SUM(s.line_profit) / NULLIF(SUM(s.extended_price_excl_tax), 0)) * 100.0, 2<br>    ) AS profit_margin_pct<br>FROM olap.fact_sale s<br>JOIN olap.dim_city ci ON s.city_sk = ci.city_sk<br>GROUP BY<br>    ci.sales_territory,<br>    ci.state_province_name,<br>    ci.city_name<br>ORDER BY<br>    ci.sales_territory,<br>    total_sales DESC<br>LIMIT 50</code></pre></th></tr><tr><th>sales_territory</th><th>state_province_name</th><th>city_name</th><th>total_sales</th><th>total_profit</th><th>profit_margin_pct</th></tr><tr class="odd"><td>External</td><td>Puerto Rico (US Territory)</td><td>Isabela</td><td>382,475.37</td><td>164,817.4</td><td>43.09</td></tr>
+<tr><td>External</td><td>Puerto Rico (US Territory)</td><td>Indios</td><td>337,361.44</td><td>154,280.7</td><td>45.73</td></tr>
+<tr class="odd"><td>External</td><td>Puerto Rico (US Territory)</td><td>Rosa Sánchez</td><td>332,196.33</td><td>140,471.8</td><td>42.29</td></tr>
+<tr><td>External</td><td>Puerto Rico (US Territory)</td><td>Palmas del Mar</td><td>322,730.14</td><td>133,765.1</td><td>41.45</td></tr>
+<tr class="odd"><td>External</td><td>Puerto Rico (US Territory)</td><td>Cataño</td><td>318,921.71</td><td>142,294.05</td><td>44.62</td></tr>
+<tr><td>External</td><td>Puerto Rico (US Territory)</td><td>Rafael Capó</td><td>306,445.84</td><td>131,548.5</td><td>42.93</td></tr>
+<tr class="odd"><td>External</td><td>Puerto Rico (US Territory)</td><td>Aceitunas</td><td>273,285.36</td><td>119,283</td><td>43.65</td></tr>
+<tr><td>External</td><td>Puerto Rico (US Territory)</td><td>Corcovado</td><td>255,874.88</td><td>107,209.3</td><td>41.9</td></tr>
+<tr class="odd"><td>Far West</td><td>Alaska</td><td>Akhiok</td><td>623,650.8</td><td>259,554.3</td><td>41.62</td></tr>
+<tr><td>Far West</td><td>California</td><td>San Jacinto</td><td>408,524.95</td><td>185,158.65</td><td>45.32</td></tr>
+<tr class="odd"><td>Far West</td><td>California</td><td>Fieldbrook</td><td>395,482.71</td><td>163,720.6</td><td>41.4</td></tr>
+<tr><td>Far West</td><td>Oregon</td><td>Wapinitia</td><td>394,690.76</td><td>163,084.6</td><td>41.32</td></tr>
+<tr class="odd"><td>Far West</td><td>Alaska</td><td>Haycock</td><td>377,386.35</td><td>167,999.45</td><td>44.52</td></tr>
+<tr><td>Far West</td><td>California</td><td>Knights Landing</td><td>376,499.05</td><td>161,495.3</td><td>42.89</td></tr>
+<tr class="odd"><td>Far West</td><td>Washington</td><td>Meadowdale</td><td>373,914.12</td><td>176,754.05</td><td>47.27</td></tr>
+<tr><td>Far West</td><td>Washington</td><td>Venersborg</td><td>371,133.97</td><td>151,581.15</td><td>40.84</td></tr>
+<tr class="odd"><td>Far West</td><td>Oregon</td><td>Placer</td><td>369,625.73</td><td>156,166.05</td><td>42.25</td></tr>
+<tr><td>Far West</td><td>Hawaii</td><td>Kapa'a</td><td>364,314.77</td><td>161,952</td><td>44.45</td></tr>
+<tr class="odd"><td>Far West</td><td>Washington</td><td>Sekiu</td><td>361,979.92</td><td>155,986.45</td><td>43.09</td></tr>
+<tr><td>Far West</td><td>California</td><td>South Laguna</td><td>361,850.63</td><td>159,068</td><td>43.96</td></tr>
+<tr class="odd"><td>Far West</td><td>California</td><td>Caruthers</td><td>359,691.95</td><td>160,276.05</td><td>44.56</td></tr>
+<tr><td>Far West</td><td>Washington</td><td>Malott</td><td>353,095.22</td><td>152,722.1</td><td>43.25</td></tr>
+<tr class="odd"><td>Far West</td><td>California</td><td>Lake Davis</td><td>351,162.24</td><td>160,181.6</td><td>45.61</td></tr>
+<tr><td>Far West</td><td>Washington</td><td>Upper Preston</td><td>350,717.35</td><td>148,768.8</td><td>42.42</td></tr>
+<tr class="odd"><td>Far West</td><td>Oregon</td><td>Kerby</td><td>348,995.7</td><td>148,915.45</td><td>42.67</td></tr>
+<tr><td>Far West</td><td>Washington</td><td>Harbour Pointe</td><td>344,567.84</td><td>145,681.4</td><td>42.28</td></tr>
+<tr class="odd"><td>Far West</td><td>Washington</td><td>Koontzville</td><td>344,272.38</td><td>146,448.2</td><td>42.54</td></tr>
+<tr><td>Far West</td><td>California</td><td>El Centro</td><td>343,710.19</td><td>159,568.35</td><td>46.43</td></tr>
+<tr class="odd"><td>Far West</td><td>California</td><td>Taft Heights</td><td>342,952.98</td><td>149,214.45</td><td>43.51</td></tr>
+<tr><td>Far West</td><td>California</td><td>Bombay Beach</td><td>342,869.14</td><td>152,657.35</td><td>44.52</td></tr>
+<tr class="odd"><td>Far West</td><td>California</td><td>Arrowhead Highlands</td><td>340,986.02</td><td>153,284.9</td><td>44.95</td></tr>
+<tr><td>Far West</td><td>California</td><td>Port Hueneme</td><td>340,110.98</td><td>140,051.45</td><td>41.18</td></tr>
+<tr class="odd"><td>Far West</td><td>Oregon</td><td>Newberg</td><td>331,492.13</td><td>153,896.4</td><td>46.43</td></tr>
+<tr><td>Far West</td><td>Nevada</td><td>Salt Wells</td><td>328,378.21</td><td>145,529.05</td><td>44.32</td></tr>
+<tr class="odd"><td>Far West</td><td>California</td><td>Lompoc</td><td>324,967.24</td><td>147,219.8</td><td>45.3</td></tr>
+<tr><td>Far West</td><td>California</td><td>Glen Avon</td><td>323,014.79</td><td>136,495.95</td><td>42.26</td></tr>
+<tr class="odd"><td>Far West</td><td>Alaska</td><td>King Cove</td><td>322,270.21</td><td>135,396.85</td><td>42.01</td></tr>
+<tr><td>Far West</td><td>Washington</td><td>Lake Stevens</td><td>321,866.45</td><td>142,534.9</td><td>44.28</td></tr>
+<tr class="odd"><td>Far West</td><td>Washington</td><td>Point Roberts</td><td>320,836.33</td><td>139,301.3</td><td>43.42</td></tr>
+<tr><td>Far West</td><td>California</td><td>Avenal</td><td>318,480.92</td><td>138,042.35</td><td>43.34</td></tr>
+<tr class="odd"><td>Far West</td><td>California</td><td>Arrowbear Lake</td><td>317,842.45</td><td>143,197.7</td><td>45.05</td></tr>
+<tr><td>Far West</td><td>Alaska</td><td>Ekwok</td><td>317,726.96</td><td>142,938.25</td><td>44.99</td></tr>
+<tr class="odd"><td>Far West</td><td>California</td><td>Floriston</td><td>312,732.9</td><td>134,847.75</td><td>43.12</td></tr>
+<tr><td>Far West</td><td>Washington</td><td>Trentwood</td><td>311,642.92</td><td>140,910.8</td><td>45.22</td></tr>
+<tr class="odd"><td>Far West</td><td>California</td><td>Herlong</td><td>309,166.14</td><td>129,738.9</td><td>41.96</td></tr>
+<tr><td>Far West</td><td>California</td><td>Termo</td><td>308,832.72</td><td>137,828.65</td><td>44.63</td></tr>
+<tr class="odd"><td>Far West</td><td>Oregon</td><td>Cave Junction</td><td>307,499.26</td><td>133,452.4</td><td>43.4</td></tr>
+<tr><td>Far West</td><td>California</td><td>Lytle Creek</td><td>306,630.85</td><td>129,388.15</td><td>42.2</td></tr>
+<tr class="odd"><td>Far West</td><td>Alaska</td><td>Kwethluk</td><td>306,201.8</td><td>125,620.45</td><td>41.03</td></tr>
+<tr><td>Far West</td><td>Oregon</td><td>Wasco</td><td>305,497.55</td><td>136,235.05</td><td>44.59</td></tr>
+</table></body></html>

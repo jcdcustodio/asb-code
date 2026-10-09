@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/><style>
+table {border: medium solid #6495ed;border-collapse: collapse;width: 100%;} th{font-family: monospace;border: thin solid #6495ed;padding: 5px;background-color: #D0E3FA;}th{text-align: left;}td{font-family: sans-serif;border: thin solid #6495ed;padding: 5px;text-align: center;}.odd{background:#e8edff;}img{padding:5px; border:solid; border-color: #dddddd #aaaaaa #aaaaaa #dddddd; border-width: 1px 2px 2px 1px; background-color:white;}</style>
+</head>
+<body>
+<table><tr><th colspan="6"><pre><code>-- Granular order lines impacted by backorders<br>SELECT<br>    fo.order_id,<br>    d.full_date AS order_date,<br>    c.customer_name,<br>    si.stock_item_name,<br>    fo.ordered_quantity,<br>    fo.extended_price_excl_tax AS delayed_revenue_impact<br>FROM olap.fact_order fo<br>JOIN olap.dim_date d ON fo.order_date_key = d.date_key<br>JOIN olap.dim_customer c ON fo.customer_sk = c.customer_sk<br>JOIN olap.dim_stock_item si ON fo.stock_item_sk = si.stock_item_sk<br>WHERE fo.is_undersupply_backordered = TRUE<br>ORDER BY fo.extended_price_excl_tax DESC<br>LIMIT 50</code></pre></th></tr><tr><th>order_id</th><th>order_date</th><th>customer_name</th><th>stock_item_name</th><th>ordered_quantity</th><th>delayed_revenue_impact</th></tr><tr class="odd"><td>31,992</td><td>2014-08-04</td><td>Wingtip Toys (Head Office)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>39,261</td><td>2014-12-10</td><td>Serdar ozCelik</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>26,304</td><td>2014-05-03</td><td>Daniel Martensson</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>30,372</td><td>2014-07-08</td><td>Wingtip Toys (Wapinitia, OR)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>36,157</td><td>2014-10-17</td><td>Juan Morse</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>38,574</td><td>2014-11-26</td><td>Eugen Agafitei</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>20,952</td><td>2014-01-28</td><td>Bahaar Asef zade</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>25,463</td><td>2014-04-21</td><td>Bimla PrabhupÄda</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>26,531</td><td>2014-05-07</td><td>Tailspin Toys (Long Meadow, MD)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>30,269</td><td>2014-07-07</td><td>Cong Hoa</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>34,256</td><td>2014-09-13</td><td>Tailspin Toys (Kerby, OR)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>35,968</td><td>2014-10-14</td><td>Kristi Part</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>37,690</td><td>2014-11-11</td><td>Tailspin Toys (Impact, TX)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>38,318</td><td>2014-11-21</td><td>Bhadram Kamasamudram</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>13,598</td><td>2013-09-10</td><td>Wingtip Toys (San Jacinto, CA)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>19,248</td><td>2013-12-27</td><td>Jakub Lukes</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>22,644</td><td>2014-02-27</td><td>Wingtip Toys (Palmas del Mar, PR)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>24,840</td><td>2014-04-09</td><td>Tailspin Toys (Cherry Grove Beach, SC)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>14,078</td><td>2013-09-19</td><td>David Novacek </td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>16,723</td><td>2013-11-09</td><td>Wingtip Toys (Robertsdale, AL)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>27,512</td><td>2014-05-23</td><td>Wingtip Toys (Nichols Hills, OK)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>28,949</td><td>2014-06-14</td><td>Bahaar Asef zade</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>31,997</td><td>2014-08-04</td><td>Tailspin Toys (Scofield, UT)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>32,742</td><td>2014-08-15</td><td>Daakshaayaani Kommineni</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>17,172</td><td>2013-11-18</td><td>Tailspin Toys (Batson, TX)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>34,616</td><td>2014-09-22</td><td>Tailspin Toys (Cundiyo, NM)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>37,037</td><td>2014-10-31</td><td>Krishnam Allu</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>37,137</td><td>2014-11-01</td><td>Tailspin Toys (Skyway, WA)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>37,718</td><td>2014-11-11</td><td>Tailspin Toys (Maypearl, TX)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>3,206</td><td>2013-03-07</td><td>Tailspin Toys (Impact, TX)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>12,249</td><td>2013-08-14</td><td>Bhagavati Vinjamuri</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>7,031</td><td>2013-05-15</td><td>Tailspin Toys (Severna Park, MD)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>18,386</td><td>2013-12-10</td><td>Drazenka Jelic</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>10,373</td><td>2013-07-11</td><td>Sumati Chatterjee</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>9,854</td><td>2013-07-03</td><td>Tailspin Toys (Brown City, MI)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>22,337</td><td>2014-02-21</td><td>Wingtip Toys (San Jacinto, CA)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>22,806</td><td>2014-03-01</td><td>Wingtip Toys (Griswoldville, GA)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>4,457</td><td>2013-03-29</td><td>Wingtip Toys (Bernstein, TX)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>10,408</td><td>2013-07-11</td><td>Tailspin Toys (Hambleton, WV)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>13,707</td><td>2013-09-12</td><td>Chuan Wattanasin</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>14,374</td><td>2013-09-24</td><td>Wingtip Toys (Yaak, MT)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>15,545</td><td>2013-10-17</td><td>Wingtip Toys (Herlong, CA)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>16,439</td><td>2013-11-04</td><td>Daevasree Samavedam</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>26,737</td><td>2014-05-09</td><td>Tailspin Toys (Glen Avon, CA)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>1,820</td><td>2013-02-04</td><td>Wingtip Toys (Beals, ME)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>10,850</td><td>2013-07-19</td><td>Hue Ton</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>6,211</td><td>2013-05-01</td><td>Wingtip Toys (Athol Springs, NY)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>4,331</td><td>2013-03-27</td><td>Kumar Kamei</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr class="odd"><td>11,308</td><td>2013-07-26</td><td>Wingtip Toys (Sayner, WI)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+<tr><td>39,360</td><td>2014-12-11</td><td>Wingtip Toys (Mayhill, NM)</td><td>Air cushion machine (Blue)</td><td>10</td><td>18,990</td></tr>
+</table></body></html>
