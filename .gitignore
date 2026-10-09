@@ -18,7 +18,8 @@ wheels/
 # Folders
 _project-cfg
 _old
-data/raw
+_dev
 
 # Files
+*.txt
 test.py
