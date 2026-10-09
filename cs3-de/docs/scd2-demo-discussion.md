@@ -19,6 +19,8 @@ FROM olap.dim_customer
 WHERE customer_id = 893;
 ```
 
+> [View result (scd2_p1)](../results/scd2_p1.html)
+
 Note that all historical orders for Customer 893 resolve to `customer_sk = 643`.
 
 ```postgresql
@@ -37,6 +39,8 @@ JOIN olap.dim_city ci ON fo.city_sk = ci.city_sk
 WHERE dc.customer_id = 893
 LIMIT 5;
 ```
+
+> [View result (scd2_p2)](../results/scd2_p2.html)
 
 Specifically for this demonstration, note their primary delivery location and customer category.
 
@@ -90,6 +94,8 @@ WHERE customer_id = 893
 ORDER BY valid_from ASC;
 ```
 
+> [View result (scd2_p3)](../results/scd2_p3.html)
+
 The table now holds both versions. The original attributes are retained under `customer_sk = 643`, and the current state is stored under surrogate key `664`.
 
 ### Verify point-in-time fact table resolution
@@ -111,6 +117,8 @@ JOIN olap.dim_customer dc ON fo.customer_sk = dc.customer_sk
 JOIN olap.dim_city ci ON fo.city_sk = ci.city_sk
 WHERE dc.customer_id = 893 AND fo.order_id = 163;
 ```
+
+> [View result (scd2_p4)](../results/scd2_p4.html)
 
 Suppose we create an order placed today in `oltp.orders` and `oltp.order_lines`.
 
@@ -169,6 +177,8 @@ JOIN olap.dim_customer dc ON fo.customer_sk = dc.customer_sk
 JOIN olap.dim_city ci ON fo.city_sk = ci.city_sk
 WHERE fo.order_id = 999999;
 ```
+
+> [View result (scd2_p5)](../results/scd2_p5.html)
 
 Because the point-in-time join uses a half-open window (`order_date >= valid_from::DATE AND order_date < valid_to::DATE`):
 
