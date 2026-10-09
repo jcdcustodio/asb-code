@@ -1,6 +1,6 @@
 # OLAP Schema
 
-The OLAP schema forms a constellation schema (two fact tables sharing a conformed dimensional core) defined across `02_init_olap.sql` through `07_load_facts.sql`:
+The OLAP schema forms a constellation schema (two fact tables sharing a conformed dimensional core):
 
 1. **Conformed Dimensions:** Five shared dimension tables integrate with both business processes. `dim_date` handles calendar and fiscal reporting periods; `dim_city` denormalizes cities, provinces, and countries; `dim_stock_item` flattens item specifications, packaging, and colors; and `dim_employee` captures staff representatives.
 2. **Slowly Changing Dimension (SCD Type 2):** `dim_customer` tracks historical changes over time using validity windows (`valid_from`, `valid_to`) and an `is_current` active flag. Fact pipeline joins resolve against the customer record valid at transaction time using half-open date intervals.
