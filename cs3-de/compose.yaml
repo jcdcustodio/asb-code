@@ -30,7 +30,7 @@ services:
       - "8085:80"
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   pgdata:
