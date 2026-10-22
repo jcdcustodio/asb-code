@@ -1,0 +1,43 @@
+name: asb
+services:
+  asb-postgres-db:
+    image: postgres:18-alpine
+    container_name: asb-postgres-db
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-asb_oltp}
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-user}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - asb_postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-asb_oltp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  
+  asb-cloudbeaver:
+    image: dbeaver/cloudbeaver:latest
+    container_name: asb-cloudbeaver
+    environment:
+      CB_ADMIN_NAME: ${CB_DEFAULT_USER:-cloudbeaveradmin}
+      CB_ADMIN_PASSWORD: ${CB_DEFAULT_PASSWORD:-Admin1104}
+    ports:
+      - "8978:8978"
+    volumes:
+      - asb_cloudbeaver_workspace:/opt/cloudbeaver/workspace
+      - ./data/duckdb:/opt/cloudbeaver/duckdb:ro
+    restart: unless-stopped
+    depends_on:
+      asb-postgres-db:
+        condition: service_healthy
+
+volumes:
+  asb_postgres_data:
+  asb_cloudbeaver_workspace:
+
+networks:
+  default:
+    name: asb_network
