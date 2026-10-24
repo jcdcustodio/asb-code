@@ -32,7 +32,7 @@ uv sync
 uv sync --group dev
 
 # Create your .env from the template
-cp .env-example .env
+cp env.example .env
 
 # Initialize containers
 docker compose up -d
@@ -61,7 +61,7 @@ cs3-de/
 │   └── 07_load_facts.sql
 ├── results/                                # Query results (business questions, SCD Type 2 demo)
 ├── .env                                    # Real key sample, NEVER commit this
-├── .env-example                            # Template, commit this
+├── env.example                           	# Template, commit this
 ├── check_quality.py                        # Sample data quality check
 ├── compose.yaml                            # Compose for running containers
 ├── db_util.py                              # Database utility functions

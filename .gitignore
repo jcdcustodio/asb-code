@@ -14,6 +14,7 @@ wheels/
 
 # Jupyter
 .ipynb_checkpoints
+.virtual_documents
 
 # Folders
 _project-cfg
@@ -22,4 +23,6 @@ _dev
 
 # Files
 *.txt
+clipboard.txt
 test.py
+test.ipynb
