@@ -1,0 +1,682 @@
+---
+title: "ASB Case Study 4 - Exploratory Data Analaysis"
+author: "JC Custodio"
+date: "`r Sys.Date()`"
+output:
+    html_document:
+        toc: true
+        toc_float: true
+        number_sections: true
+        theme: cosmo
+        highlight: tango
+---
+
+```{r "setup", include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE
+)
+
+# Install packages
+# install.packages("tidyverse")
+# install.packages("devtools")
+```
+
+```{r}
+# Load packages
+
+library(tidyverse)
+library(broom)
+library(conflicted)
+
+# Resolve function conflicts (Optional)
+
+conflicts_prefer(dplyr::filter())
+conflicts_prefer(dplyr::lag())
+```
+
+# Introduction
+
+You are a Data Analyst at an automotive consultancy. A client, a car manufacturer planning its next line-up, wants to better understand how vehicle design choices relate to fuel efficiency and performance, and how its potential competitors are positioned.
+
+Using historical vehicle specification data, conduct exploratory data analysis (EDA) and translate your findings into insights that can support product-planning decisions.
+
+For this case study, use the built-in `mtcars` dataset.
+
+# Objectives
+
+- Assess and understand the available data.
+- Identify important fuel-efficiency, performance, design, and manufacturer patterns.
+- Detect unusual observations and potential data-quality or data-limitation concerns.
+- Use appropriate visualizations and descriptive statistics.
+- Apply statistical tests where appropriate.
+- Communicate actionable business insights and recommendations.
+
+# Data Source
+
+The data was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models). In other words, the dataset has 32 observations (rows) and 11 variables (columns).
+
+- `mpg` - Miles/(US) gallon
+- `cyl` - Number of cylinders
+- `disp` - Displacement (cu.in.)
+- `hp` - Gross horsepower
+- `drat` - Rear axle ratio
+- `wt` - Weight (1000 lbs)
+- `qsec` - 1/4 mile time
+- `vs` - Engine (0 = V-shaped, 1 = straight)
+- `am` - Transmission (0 = automatic, 1 = manual)
+- `gear` - Number of forward gears
+- `carb` - Number of carburetors
+
+```{r}
+# Load data
+
+data(mtcars)
+head(mtcars)
+```
+
+# Data Inspection and Preparation
+
+```{r}
+# Inspect data
+
+glimpse(mtcars)
+
+# Show dimensions (no. of rows and columns)
+
+dim(mtcars)
+```
+
+```{r}
+# Check missing values
+
+mtcars |>
+    summarise(
+        across(
+            everything(),
+            ~ sum(is.na(.))
+        )
+    )
+```
+
+Pointers for data preparation:
+
+1. Turn the car models into a proper column (by default they are presented as rownames in the dataset)
+2. Replace "Merc" as "Mercedes" for clarity
+3. Extract car brand and map their origin to a geographic region
+4. Define categorical variables as factors (i.e. `cyl`, `vs`, `am`, `model`, `brand`, `origin`)
+
+Through online search the brand of each model were determined, and for simplicity the region was assumed to be the location where the brand is based on. 
+
+```{r}
+from_US = c("Cadillac", "Lincoln", "Chrysler", "Dodge", "AMC", "Camaro", "Pontiac", "Chevrolet", "Ford", "Plymouth")
+from_JP = c("Toyota", "Datsun", "Mazda", "Honda")
+from_EU = c("Mercedes", "Fiat", "Porsche", "Volvo", "Ferrari", "Maserati", "Lotus")
+
+df <- mtcars |> 
+    # Turn car models from row names to a column
+    rownames_to_column(var = "model") |> 
+    mutate(
+        # Correct "Merc" to "Mercedes"
+        model = str_replace_all(model, "Merc", "Mercedes"),
+        # Extract car brand
+        brand = word(model, 1),
+        # Manually tag brand on specific models
+        brand = recode_values(
+            model,
+            "Hornet 4 Drive" ~ "Dodge",
+            "Hornet Sportabout" ~ "AMC",
+            c("Valiant", "Duster 360") ~ "Plymouth",
+            default = brand
+        ),
+        # Map brand to region of origin
+        origin = case_when(
+            brand %in% from_US ~ "United States",
+            brand %in% from_JP ~ "Japan",
+            brand %in% from_EU ~ "Europe",
+            TRUE ~ "Others"
+        )
+    )
+
+df <- df |>
+    mutate(
+        # Change transmission labels
+        am = factor(am, levels = c(0, 1), labels = c("Automatic", "Manual")),
+        # Change engine labels
+        vs = factor(vs, levels = c(0, 1), labels = c("V-shaped", "Straight")),
+        # Leave labels as it is, but treat as categories
+        cyl = ordered(cyl),
+        gear = ordered(gear),
+        carb = ordered(carb),
+        model = factor(model),
+        brand = factor(brand),
+        origin = factor(origin)
+    )
+```
+
+Before continuing further, we can quickly check again the dataframe.
+
+```{r}
+glimpse(df)
+summary(df)
+```
+
+# Check Distributions – Univariate Analysis
+
+Q: What the distribution of fuel efficiency (in MPG) looks like and what a "typical" car looks like?
+
+```{r}
+# Distribution of MPG across all vehicles
+
+mean_mpg <- mean(df$mpg)
+median_mpg <- median(df$mpg)
+df |> 
+    ggplot(aes(x = mpg)) +
+    geom_histogram(
+        aes(y = after_stat(density)), 
+        alpha = 0.75, 
+        binwidth = 3, 
+        fill = "steelblue", 
+        color = "black"
+    ) +
+    geom_density(linetype = "dashed") + 
+    geom_vline(xintercept = mean_mpg, color="darkgreen", linewidth = 0.75) +
+    geom_vline(xintercept = median_mpg, color="darkblue", linewidth = 0.75) +
+    labs(
+        title = "Distribution of Fuel Efficiency (MPG)",
+        x = "Miles Per Gallon",
+        y = "Count of Vehicles"
+    ) +
+    theme_minimal()
+
+# Boxplot of MPG across all vehicles
+
+df |>
+    ggplot(aes(x = mpg, y = "")) + 
+    geom_boxplot(
+        alpha = 0.75, 
+        fill = "steelblue", 
+        staplewidth = 0.25, 
+        outlier.color = "red", 
+        outlier.shape = 16
+    ) + 
+    labs(
+        title = "Boxplot Distribution of Fuel Efficiency (MPG)",
+        x = "Miles Per Gallon",
+        y = ""
+    ) +
+    theme_minimal()
+```
+
+```{r}
+# Detailed summary statistics of vehicles' MPG
+
+df |>
+    summarize(
+        mean_mpg = mean(mpg),
+        median_mpg = median(mpg),
+        min_mpg = min(mpg),
+        max_mpg = max(mpg),
+        sd_mpg = sd(mpg),
+        iqr_mpg = IQR(mpg)
+    )
+```
+
+```{r}
+df |> 
+    summarize(
+        mean_mpg = mean(mpg),
+        median_mpg = median(mpg),
+        mean_wt = mean(wt) * 1000,
+        mean_hp = mean(hp)
+    )
+```
+
+Q: What are the *best* and *worst* cars?
+
+```{r}
+# Top 3 cars based on MPG
+
+df |>
+    arrange(desc(mpg)) |>
+    slice_head(n = 3)
+
+# Bottom 3 cars based on MPG
+
+df |>
+    arrange(mpg) |>
+    slice_head(n = 3)
+```
+
+Looking at vehicles in their brand and region of origin.
+
+```{r}
+# Car brands
+
+summary(df$brand)
+
+# Region of origin
+
+summary(df$origin)
+```
+
+# Check Relationships – Bivariate and Multivariate Analysis
+
+Q: How fuel efficiency is related to weight (wt), horsepower (hp), and displacement (disp)?
+
+```{r}
+# MPG vs. weight
+
+df |>
+    ggplot(aes(x = wt, y = mpg)) +
+    geom_point(size = 2.5, alpha = 0.75, color = "steelblue") +
+    # Trendline
+    geom_smooth(
+        method = "lm", 
+        color = "red", 
+        se = FALSE, 
+        linetype = "dashed",
+        linewidth = 0.75
+    ) + 
+    labs(
+        title = "Fuel Efficiency vs. Weight",
+        x = "Weight (in 1,000 lbs)",
+        y = "Miles Per Gallon"
+    ) +
+    theme_minimal()
+```
+
+```{r}
+# MPG vs. weight by horsepower and number of cylinders
+
+df |>
+    ggplot(aes(x = wt, y = mpg, color = cyl, size = hp)) +
+    geom_point(alpha = 0.75) +
+    scale_color_viridis_d(option = "viridis", name = "Cylinders") +
+    labs(
+        title = "Fuel Efficiency vs. Weight by Horsepower and Cylinders",
+        x = "Weight (in 1,000 lbs)",
+        y = "Miles Per Gallon",
+        size = "Horsepower"
+    ) + 
+    theme_minimal()
+```
+
+```{r}
+# Correlation for key numeric variables
+
+cor_mat <- df |> 
+    select(where(is.numeric)) |> 
+    cor(use = "complete.obs")
+
+cor_mat
+
+cor_df <- cor_mat |>
+    as.data.frame() |>
+    rownames_to_column("var1") |>
+    pivot_longer(-var1, names_to = "var2", values_to = "corr") |>
+    mutate(across(c(var1, var2), fct_inorder))
+
+cor_df |>
+    ggplot(aes(x = var1, y = var2, fill = corr)) +
+    geom_tile(color = "white", linewidth = 0.5) + 
+    geom_text(aes(label = round(corr, 4)), color = "black", size = 5) + 
+    scale_fill_viridis_c(
+        limits = c(-1, 1),
+        name = "Pearson R"
+    ) +
+    scale_y_discrete(limits = rev) +
+    coord_fixed() +
+    theme_minimal() +
+    labs(
+        x = NULL,
+        y = NULL
+    )
+```
+
+Based on the correlation matrix, check if `mpg`, `disp`, and `hp` are consistently strongly correlated.
+
+```{r}
+df |> group_by(am) |> summarize(correlation = cor(mpg, disp))
+df |> group_by(am) |> summarize(correlation = cor(mpg, hp))
+df |> group_by(am) |> summarize(correlation = cor(hp, disp))
+```
+
+```{r}
+df |> group_by(cyl) |> summarize(correlation = cor(mpg, disp))
+df |> group_by(cyl) |> summarize(correlation = cor(mpg, hp))
+df |> group_by(cyl) |> summarize(correlation = cor(hp, disp))
+```
+
+```{r}
+df |> group_by(vs) |> summarize(correlation = cor(mpg, disp))
+df |> group_by(vs) |> summarize(correlation = cor(mpg, hp))
+df |> group_by(vs) |> summarize(correlation = cor(hp, disp))
+```
+
+# Group Comparisons
+
+Q: How manual and automatic vehicles differ in fuel efficiency?
+
+```{r}
+# MPG vs. weight by transmission type
+
+df |>
+    ggplot(aes(x = wt, y = mpg, color = am)) +
+    geom_point(size = 2.5, alpha = 0.75) +
+    scale_color_viridis_d(name = "Transmission") +
+    labs(
+        title = "Fuel Efficiency vs. Weight by Transmission Type",
+        x = "Weight (in 1,000 lbs)",
+        y = "Miles Per Gallon"
+    ) + 
+    theme_minimal()
+
+# MPG across transmission type
+
+df |>
+    ggplot(aes(x = am, y = mpg, fill = am)) +
+    geom_boxplot(
+        alpha = 0.75, 
+        fill = "steelblue", 
+        staplewidth = 0.25, 
+        outlier.shape = 16
+    ) + 
+    geom_jitter(
+        width = 0.1, 
+        color = "darkblue", 
+        size = 1.5, 
+        alpha = 0.5
+    ) +
+    labs(
+        title = "Fuel Efficiency by Transmission Type", 
+        x = "Transmission", 
+        y = "Miles Per Gallon"
+    ) + 
+    theme_minimal() +
+    theme(legend.position = "none")
+```
+
+Q: How do vehicles differ across engine type?
+
+```{r}
+# MPG across engine type
+
+df |>
+    ggplot(aes(x = vs, y = mpg, fill = vs)) +
+    geom_boxplot(
+        alpha = 0.75, 
+        fill = "steelblue", 
+        staplewidth = 0.25, 
+        outlier.shape = 16
+    ) + 
+    geom_jitter(
+        width = 0.1, 
+        color = "darkblue", 
+        size = 1.5, 
+        alpha = 0.5
+    ) +
+    labs(
+        title = "Fuel Efficiency by Engine Type", 
+        x = "Engine", 
+        y = "Miles Per Gallon"
+    ) + 
+    theme_minimal() +
+    theme(legend.position = "none")
+```
+
+Q: How do vehicles differ across cylinder groups?
+
+```{r}
+# MPG across cylinder groups
+
+df |>
+    ggplot(aes(x = cyl, y = mpg, fill = cyl)) +
+    geom_boxplot(
+        alpha = 0.75, 
+        fill = "steelblue", 
+        staplewidth = 0.25, 
+        outlier.shape = 16
+    ) + 
+    geom_jitter(
+        width = 0.1, 
+        color = "darkblue", 
+        size = 1.5, 
+        alpha = 0.5
+    ) +
+    labs(
+        title = "Fuel Efficiency by Cylinder Groups", 
+        x = "Cylinders", 
+        y = "Miles Per Gallon"
+    ) + 
+    theme_minimal() +
+    theme(legend.position = "none")
+```
+
+Q: How do vehicle differ across regions of origin?
+
+```{r}
+# MPG vs. weight by region of origin
+
+df |>
+    ggplot(aes(x = wt, y = mpg, color = origin)) +
+    geom_point(size = 2.5, alpha = 0.75) +
+    scale_color_viridis_d(name = "Region") +
+    labs(
+        title = "Fuel Efficiency vs. Weight by Region of Origin",
+        x = "Weight (in 1,000 lbs)",
+        y = "Miles Per Gallon"
+    ) + 
+    theme_minimal()
+
+# MPG across brands based on region of origin
+
+df |>
+    ggplot(aes(x = origin, y = mpg, fill = origin)) +
+    geom_boxplot(
+        alpha = 0.75, 
+        fill = "steelblue", 
+        staplewidth = 0.25, 
+        outlier.shape = 16
+    ) + 
+    geom_jitter(
+        width = 0.1, 
+        color = "darkblue", 
+        size = 1.5, 
+        alpha = 0.5
+    ) +
+    labs(
+        title = "Fuel Efficiency by Region of Origin", 
+        x = "Region", 
+        y = "Miles Per Gallon"
+    ) + 
+    theme_minimal() +
+    theme(legend.position = "none")
+```
+
+View all the cars by their region of origin.
+
+```{r}
+# From United States
+
+df |> filter(origin == "United States") |> select(-origin) |> arrange(desc(mpg))
+```
+
+```{r}
+# From Europe
+
+df |> filter(origin == "Europe") |> select(-origin) |> arrange(desc(mpg))
+```
+
+```{r}
+# From Japan
+
+df |> filter(origin == "Japan") |> select(-origin) |> arrange(desc(mpg))
+```
+
+# Statistical Testing
+
+Definitions:
+
+- $H_o$ (Null Hypothesis) - no effect, no difference, or no relationship in a population; status quo, zero effect, random chance
+- $H_1$ (Alternative Hypothesis) - a real effect, difference, or relationship does exist; expected outcome
+
+If the p-value is below the chosen significance level, such as 0.05, reject the null hypothesis.
+
+## Weight and MPG
+
+Q: Is vehicle weight significantly correlated with fuel efficiency?
+
+- $H_o$: No linear correlation between weight and MPG.
+- $H_1$: Linear correlation exists between weight and MPG.
+
+```{r}
+cor.test(df$wt, df$mpg, method = "pearson")
+```
+
+Note: Statistical association does not automatically imply causation.
+
+## Transmission and MPG
+
+Q: Do automatic and manual transmission cars have different fuel efficiencies?
+
+- $H_o$: Mean MPG of automatic cars = Mean MPG of manual cars.
+- $H_1$: Mean MPG of automatic cars != Mean MPG of manual cars.
+
+```{r}
+t.test(mpg ~ am, data = df, var.equal = FALSE)
+```
+
+## Engine Type and MPG
+
+Q: Do each engine type have different fuel efficiencies?
+
+- $H_o$: Mean MPG of cars with straight engine = Mean MPG of cars with v-shaped engine.
+- $H_1$: Mean MPG of cars with straight engine != Mean MPG of cars with v-shaped engine.
+
+```{r}
+t.test(mpg ~ vs, data = df, var.equal = FALSE)
+```
+
+## Cylinder Count and MPG
+
+Q: Do each cylinder groups have different fuel efficiencies?
+
+- $H_o$: All cylinder groups have the same population mean MPG.
+- $H_1$: At least one cylinder group has a different population mean MPG.
+
+```{r}
+result_anova_cyl = aov(mpg ~ cyl, data = df)
+summary(result_anova_cyl)
+```
+
+```{r}
+# ANOVA is statistically significant thus perform pairwise comparisons
+TukeyHSD(result_anova_cyl)
+```
+
+## Origin and MPG
+
+Q: Is there a significant difference in the car's performance based where their brand originated?
+
+- $H_o$: All regions have the same population mean MPG.
+- $H_1$: At least one region has a different population mean MPG.
+
+```{r}
+result_anova_origin = aov(mpg ~ origin, data = df)
+summary(result_anova_origin)
+```
+
+```{r}
+# ANOVA is statistically significant thus perform pairwise comparisons
+TukeyHSD(result_anova_origin)
+```
+
+# Additional investigation
+
+## Over-performing Cars
+
+Management wants to know if there are vehicles whose fuel efficiency is surprising given their size or power. To find out, we can fit a linear model predicting `mpg` based on `wt` and `hp`, and look at the residuals (the difference between the expected MPG and actual MPG).
+
+```{r}
+# Fit a model predicting MPG using Weight and Horsepower
+eff_model <- lm(mpg ~ wt + hp, data = df)
+summary(eff_model)
+
+# Attach predictions and residuals to our data
+cars_analyzed <- augment(eff_model, data = df)
+cars_analyzed |> head(5)
+
+# Find the biggest over-performers (positive residuals)
+over_performing_cars = cars_analyzed |> 
+    arrange(desc(.resid)) |>
+    pull(model) |>
+    head(3)
+
+df |> filter(model %in% over_performing_cars) |> arrange(desc(mpg))
+```
+
+- A large positive residual means a car gets much better fuel economy than its weight and horsepower suggest it should.
+
+## Regional Advantage
+
+We created a boxplot before showing the fuel efficiency of cars by region of origin. At a glance, Japanese cars has the highest MPG followed by European cars then US cars. We also determined through an ANOVA test that difference in fuel efficiency between European and Japanese cars compared to US cars is significant.
+
+Let's further verify if Japanese or European manufacturers demonstrate inherently better fuel efficiency than US models, even when strictly controlling for vehicle weight i.e. assuming the vehicle weights the same.
+
+```{r}
+# Set the United States as the baseline comparison
+df_reg_origin_US = df |> mutate(origin = fct_relevel(origin, "United States"))
+
+# Fit a model then check coefficient for baseline fuel efficiency difference
+region_model <- lm(mpg ~ wt + origin, data = df_reg_origin_US)
+summary(region_model)
+```
+
+- European and Japanese cars only has an advantage of 1.2 to 1.3 MPG more than US cars, which is statisfically insignificant as shown from the p-values. 
+- This result suggests that there isn't much advantage in choosing parts (e.g. engine) from one region over another and it supports the idea that making the vehicle lighter improves fuel efficiency.
+
+## Drivetrain Complexity vs. Acceleration
+
+Does increasing the number of forward gears or carburetors significantly improve a vehicle's 1/4 mile time without severely penalizing its fuel efficiency?
+
+```{r}
+# Model acceleration based on drivetrain complexity
+acceleration_model <- lm(qsec ~ gear + carb, data = df)
+summary(acceleration_model)
+
+# Visualize the trade-off (qsec vs mpg) mapped with complexity
+df |>
+    ggplot(aes(x = qsec, y = mpg, color = gear, size = carb)) +
+    geom_point(alpha = 0.7) +
+    labs(
+        x = "1/4 Mile Time (sec) [Lower is Faster]", 
+        y = "Miles Per Gallon", 
+        color = "Gears", 
+        size = "Carbs"
+    ) +
+    theme_minimal()
+```
+
+- The overall p-value confirms that the effect of gears and carburetors on acceleration is not zero. It proves the relationship is valid. 
+- However the Adjusted R-squared indicates that nearly half of the variance in a vehicle's 1/4 mile time remains entirely unexplained by this specific model.
+- Based on the data, if the goal is to build a faster car, relying on drivetrain complexity (gear and carb) is a valid but practically weak strategy compared to the approach of increasing horsepower and reducing chassis weight.
+
+# Summary
+
+## Key findings
+
+1. There is a strong negative correlation between a vehicle's weight and its fuel efficiency. Across all vehicle types, as weight increases, MPG predictably and sharply declines.
+2. While manual transmission vehicles show a statistically higher baseline MPG, this advantage is heavily conflated with vehicle size. Manual cars in the 1970s tend to be lighter with smaller engines, meaning the transmission alone doesn't account for the entire efficiency gain.
+3. High horsepower generally results in lower fuel efficiency. However, regression modeling reveals clear "overperforming" outliers—specific vehicles that achieve significantly higher MPG than their weight and horsepower profiles dictate.
+
+## Recommendations
+
+1. Prioritize lightweight engineering for eco-models - Shift R&D investment toward reducing chassis and component weight rather than solely relying on engine tuning.
+2. Reverse-engineer the market's overperformers - Conduct a competitive tear-down of the specific vehicles identified with high positive residuals in the multivariate model. The residual analysis proves certain vehicles beat the expected performance-to-efficiency trade-off, suggesting unmeasured factors (like aerodynamics or gearing) that the manufacturer should replicate.
+3. Target the high-efficiency segment with lightweight manual configurations - If launching a new fuel-conscious line-up based on this data, pair manual transmissions exclusively with lighter frames. Statistical testing confirms that the manual transmission group dominates the highest end of the MPG distribution.
+
+## Limitations
+
+Given the relevant period of the dataset and its size (32 observations), the derived insights are limited and may no longer be applicable in today's market. It is further recommended to redo this analysis using a larger and updated dataset.
