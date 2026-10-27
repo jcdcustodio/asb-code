@@ -133,7 +133,7 @@ cs4-bi/
 - The map visual indicates that northern states experience average delivery times exceeding 20 days and significantly higher freight ratios.
 - The business is heavily reliant on one geographic cluster. The friction of high shipping costs and slow transit prevents Olist from capturing market share in the rest of the country.
 
-## Actionable Business Recommendations
+## Business Recommendations
 
 1. **Enforce Strict Merchant Quality SLAs** - To protect the network's health, Olist must implement automated penalties for toxic sellers. Sellers who exceed a 15% late delivery rate or maintain an average review score below 3.0 should be deprioritized in search results or temporarily suspended from the platform.
 2. **Launch a Post-Purchase Retention Program** - To improve unit economics, Olist must deploy targeted re-engagement campaigns. Customers should receive automated incentives (e.g., free shipping or discounts) 30 days after a successful, highly-rated first purchase to convert them into repeat buyers and drive up LTV.

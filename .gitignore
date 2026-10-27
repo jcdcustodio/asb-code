@@ -22,6 +22,7 @@ _old
 _dev
 
 # Files
+.env
 *.txt
 clipboard.txt
 test.py

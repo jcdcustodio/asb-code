@@ -1,6 +1,6 @@
 # Analytical/Semantic Model
 
-The analytical model utilizes a constellation/multi-fact star schema. Instead of flattening the entire e-commerce dataset into a single massive table—which causes catastrophic data duplication and metric inflation—the model separates data into shared contextual dimensions and isolated event-driven fact tables based on their precise business granularities.
+The analytical model utilizes a constellation/multi-fact star schema. Instead of flattening the entire e-commerce dataset into a single massive table, which causes catastrophic data duplication and metric inflation, the model separates data into shared contextual dimensions and isolated event-driven fact tables based on their precise business granularities.
 
 ## ER Diagram
 
