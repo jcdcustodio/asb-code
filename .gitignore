@@ -30,3 +30,6 @@ data/
 clipboard.txt
 test.py
 test.ipynb
+
+# Config
+.databricks
