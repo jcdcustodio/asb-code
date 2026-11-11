@@ -17,9 +17,12 @@ wheels/
 .virtual_documents
 
 # Folders
-_project-cfg
-_old
-_dev
+_project-cfg/
+_old/
+_dev/
+_imports/
+_ref/
+data/
 
 # Files
 .env
