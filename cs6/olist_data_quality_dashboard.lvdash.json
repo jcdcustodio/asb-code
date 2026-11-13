@@ -1,0 +1,994 @@
+{
+  "datasets": [
+    {
+      "name": "dataset1",
+      "displayName": "data_quality_metrics",
+      "config": {
+        "version": "1.1",
+        "source": "asb.semantic.data_quality_metrics",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          }
+        ]
+      }
+    },
+    {
+      "name": "42ca6bb9",
+      "displayName": "data_quality_result",
+      "config": {
+        "version": "1.1",
+        "source": "asb.quarantine.audit_pipeline_runs",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          }
+        ],
+        "measures": [
+          {
+            "name": "passing_rate",
+            "expr": "SUM(source.records_passed) / SUM(source.total_evaluated)",
+            "displayName": "Passing Rate"
+          },
+          {
+            "name": "failure_rate",
+            "expr": "SUM(source.records_quarantined) / SUM(source.total_evaluated)",
+            "displayName": "Failure Rate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "fa3058a0",
+      "displayName": "data_quality_summary",
+      "queryLines": [
+        "SELECT \r\n",
+        "    entity_name,\r\n",
+        "    total_evaluated,\r\n",
+        "    records_passed,\r\n",
+        "    records_quarantined,\r\n",
+        "    (records_passed / NULLIF(total_evaluated, 0)) * 100 AS pass_rate_pct,\r\n",
+        "    (records_quarantined / NULLIF(total_evaluated, 0)) * 100 AS failure_rate_pct\r\n",
+        "FROM asb.quarantine.audit_pipeline_runs\r\n",
+        ";"
+      ]
+    },
+    {
+      "name": "pass_fail_by_entity",
+      "displayName": "pass_fail_by_entity",
+      "config": {
+        "version": "1.1",
+        "source": "SELECT entity_name, status, records,\n       records * 1.0 / SUM(records) OVER (PARTITION BY entity_name) AS pct\nFROM (\n  SELECT entity_name, 'passed' AS status, records_passed AS records\n  FROM asb.quarantine.audit_pipeline_runs\n  UNION ALL\n  SELECT entity_name, 'quarantined' AS status, records_quarantined AS records\n  FROM asb.quarantine.audit_pipeline_runs\n)\n",
+        "dimensions": [
+          {
+            "name": "entity_name",
+            "expr": "source.entity_name"
+          },
+          {
+            "name": "status",
+            "expr": "source.status"
+          }
+        ],
+        "measures": [
+          {
+            "name": "record_share",
+            "expr": "SUM(source.pct)",
+            "displayName": "Record Share"
+          },
+          {
+            "name": "record_count",
+            "expr": "SUM(source.records)",
+            "displayName": "Record Count"
+          }
+        ]
+      }
+    }
+  ],
+  "pages": [
+    {
+      "name": "page1",
+      "displayName": "main",
+      "layout": [
+        {
+          "widget": {
+            "name": "bar_chart1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "failure_reason",
+                      "expression": "`failure_reason`"
+                    },
+                    {
+                      "name": "entity_name",
+                      "expression": "`entity_name`"
+                    },
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    },
+                    {
+                      "name": "rule_id",
+                      "expression": "`rule_id`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "<span style=\"font-size: 14px;\">Failure Count by Failed Rule</span>",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "count(*)",
+                  "format": {
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "places": 0,
+                      "type": "max"
+                    },
+                    "type": "number-plain"
+                  },
+                  "displayName": "Number of Records",
+                  "scale": {
+                    "type": "quantitative",
+                    "fn": {
+                      "type": "symlog"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "rule_id",
+                  "axis": {
+                    "hideLabels": false,
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                },
+                "label": {
+                  "show": true
+                },
+                "extra": [
+                  {
+                    "fieldName": "failure_reason",
+                    "displayName": "Failure Reason"
+                  },
+                  {
+                    "fieldName": "entity_name",
+                    "displayName": "Entity"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 5,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "table1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "entity_name",
+                      "expression": "`entity_name`"
+                    },
+                    {
+                      "name": "record_key",
+                      "expression": "`record_key`"
+                    },
+                    {
+                      "name": "_failure_count",
+                      "expression": "`_failure_count`"
+                    },
+                    {
+                      "name": "rule_id",
+                      "expression": "`rule_id`"
+                    },
+                    {
+                      "name": "failure_reason",
+                      "expression": "`failure_reason`"
+                    },
+                    {
+                      "name": "_quarantined_at",
+                      "expression": "`_quarantined_at`"
+                    }
+                  ],
+                  "disaggregated": true,
+                  "orders": [
+                    {
+                      "direction": "DESC",
+                      "expression": "`_failure_count`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Root Cause Drill-down",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "rowsPerPage": 5,
+              "displayRowNumbers": false,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "entity_name",
+                    "useForSearch": false,
+                    "displayName": "Entity",
+                    "actions": {
+                      "hover": {
+                        "type": "tooltip",
+                        "tooltipTemplate": "{{ @ }}"
+                      }
+                    }
+                  },
+                  {
+                    "fieldName": "record_key",
+                    "displayName": "Record Key"
+                  },
+                  {
+                    "fieldName": "_failure_count",
+                    "useForSearch": false,
+                    "format": {
+                      "type": "numeral.js",
+                      "format": "0"
+                    },
+                    "contentAlignment": "left",
+                    "displayName": "Number of Failed Rules",
+                    "actions": {
+                      "hover": {
+                        "type": "tooltip",
+                        "tooltipTemplate": "{{ @ }}"
+                      }
+                    }
+                  },
+                  {
+                    "fieldName": "rule_id",
+                    "useForSearch": false,
+                    "displayName": "Rule ID",
+                    "actions": {
+                      "hover": {
+                        "type": "tooltip",
+                        "tooltipTemplate": "{{ @ }}"
+                      }
+                    }
+                  },
+                  {
+                    "fieldName": "failure_reason",
+                    "useForSearch": false,
+                    "displayName": "Failure Reason",
+                    "actions": {
+                      "hover": {
+                        "type": "tooltip",
+                        "tooltipTemplate": "{{ @ }}"
+                      }
+                    }
+                  },
+                  {
+                    "fieldName": "_quarantined_at",
+                    "displayName": "Quarantine Timestamp"
+                  }
+                ],
+                "rowOrder": [
+                  {
+                    "by": "column-reversed",
+                    "field": {
+                      "index": 2
+                    }
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 16,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "total-records-passed",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "42ca6bb9",
+                  "fields": [
+                    {
+                      "name": "sum(records_passed)",
+                      "expression": "SUM(`records_passed`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "<span style=\"font-size: 14px;\">Total Records Passed</span>",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(records_passed)",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    },
+                    "significantFigures": {
+                      "type": "all"
+                    }
+                  },
+                  "style": {
+                    "fontSize": 56,
+                    "fontWeight": 700,
+                    "fontStyle": "normal"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "total-records-quarantined",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "42ca6bb9",
+                  "fields": [
+                    {
+                      "name": "sum(records_quarantined)",
+                      "expression": "SUM(`records_quarantined`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "<span style=\"font-size: 14px;\">Total Records Quarantined</span>",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(records_quarantined)",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "style": {
+                    "fontSize": 56,
+                    "fontWeight": 700,
+                    "fontStyle": "normal"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 2,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "b37b6557",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "42ca6bb9",
+                  "fields": [
+                    {
+                      "name": "measure(passing_rate)",
+                      "expression": "MEASURE(`passing_rate`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "showDescription": false,
+                "title": {
+                  "value": "<span style=\"font-size: 14px;\">Data Quality Score</span>",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(passing_rate)",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "style": {
+                    "fontSize": 56,
+                    "fontWeight": 700,
+                    "fontStyle": "normal"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "a681cca1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "pass_fail_by_entity",
+                  "fields": [
+                    {
+                      "name": "status",
+                      "expression": "`status`"
+                    },
+                    {
+                      "name": "measure(record_share)",
+                      "expression": "MEASURE(`record_share`)"
+                    },
+                    {
+                      "name": "entity_name",
+                      "expression": "`entity_name`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "<span style=\"font-size: 14px;\">Pass vs. Fail Records by Entity</span>",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "mark": {
+                "layout": "stack"
+              },
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "measure(record_share)",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 4
+                    }
+                  },
+                  "scale": {
+                    "type": "quantitative",
+                    "fn": {
+                      "type": "symlog"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "entity_name",
+                  "axis": {
+                    "hideTitle": true,
+                    "hideLabels": false
+                  },
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "natural-order"
+                    }
+                  }
+                },
+                "color": {
+                  "fieldName": "status",
+                  "displayName": "Status",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 10,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "e3fedc76",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "countdistinct(record_key)",
+                      "expression": "COUNT(DISTINCT `record_key`)"
+                    },
+                    {
+                      "name": "_failure_count",
+                      "expression": "`_failure_count`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "<span style=\"font-size: 14px;\">Distribution of Failed Rule Count</span>",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "countdistinct(record_key)",
+                  "format": {
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "places": 0,
+                      "type": "max"
+                    },
+                    "type": "number-plain"
+                  },
+                  "axis": {
+                    "hideLabels": false,
+                    "hideGrid": false,
+                    "hideTitle": true
+                  },
+                  "displayName": "Number of Unique Records",
+                  "scale": {
+                    "type": "quantitative",
+                    "fn": {
+                      "type": "symlog"
+                    }
+                  }
+                },
+                "y": {
+                  "fieldName": "_failure_count",
+                  "displayName": "Number of Failed Rules",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "x-reversed"
+                    }
+                  }
+                },
+                "label": {
+                  "show": true
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "root-cause-drill-down",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "rule_id",
+                      "expression": "`rule_id`"
+                    },
+                    {
+                      "name": "failure_reason",
+                      "expression": "`failure_reason`"
+                    },
+                    {
+                      "name": "count(*)",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ],
+                  "disaggregated": false,
+                  "orders": [
+                    {
+                      "direction": "DESC",
+                      "expression": "COUNT(`*`)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Failure Rules",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "rule_id",
+                    "columnWidth": 161,
+                    "displayName": "Rule"
+                  },
+                  {
+                    "fieldName": "failure_reason",
+                    "displayName": "Failure Reason"
+                  },
+                  {
+                    "fieldName": "count(*)",
+                    "contentAlignment": "left",
+                    "headerAlignment": "left",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "displayName": "Number of Records"
+                  }
+                ],
+                "rowOrder": [
+                  {
+                    "by": "column-reversed",
+                    "field": {
+                      "index": 2
+                    }
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 10,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "164aaed3",
+            "spec": {
+              "widgetType": "text",
+              "version": 1,
+              "encodings": {
+                "text": {
+                  "lines": [
+                    "<span style=\"text-align:left;display:block;\"><span style=\"font-size:32px;font-weight:700\">OLIST E-commerce Data Quality Dashboard</span></span>\n",
+                    "\n",
+                    "<span style=\"font-size:14px;font-weight:500\">Monitoring 19 data quality rules across records of customers, geolocation, orders, order items, payments, order reviews, products, and sellers.</span>"
+                  ],
+                  "fields": []
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "7ac4612b",
+      "displayName": "Global Filters",
+      "layout": [
+        {
+          "widget": {
+            "name": "b9d8cd7f",
+            "queries": [
+              {
+                "name": "dashboards/01f1ddf7db9d17a8b4927dfa322aa261/datasets/01f1ddf7db9d19dcb6b339e0163114d2_rule_id",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "rule_id",
+                      "expression": "`rule_id`"
+                    },
+                    {
+                      "name": "rule_id_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "rule_id",
+                    "queryName": "dashboards/01f1ddf7db9d17a8b4927dfa322aa261/datasets/01f1ddf7db9d19dcb6b339e0163114d2_rule_id"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "048127cd",
+            "queries": [
+              {
+                "name": "dashboards/01f1ddf7db9d17a8b4927dfa322aa261/datasets/01f1ddf7db9d19dcb6b339e0163114d2_entity_name",
+                "query": {
+                  "datasetName": "dataset1",
+                  "fields": [
+                    {
+                      "name": "entity_name",
+                      "expression": "`entity_name`"
+                    },
+                    {
+                      "name": "entity_name_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "showDescription": false
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "entity_name",
+                    "queryName": "dashboards/01f1ddf7db9d17a8b4927dfa322aa261/datasets/01f1ddf7db9d19dcb6b339e0163114d2_entity_name"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "canvasBackgroundColor": {
+        "light": "#E6E9EA",
+        "dark": "#1E2931"
+      },
+      "widgetBackgroundColor": {
+        "light": "#FFFFFF",
+        "dark": "#15181C"
+      },
+      "widgetBorderColor": {
+        "light": "#F3F5F6",
+        "dark": "#21292F"
+      },
+      "fontColor": {
+        "light": "#1A2127",
+        "dark": "#EEF0F2"
+      },
+      "selectionColor": {
+        "light": "#0E7AB9",
+        "dark": "#41ADEC"
+      },
+      "visualizationColors": [
+        "#A6CEE3",
+        "#1F78B4",
+        "#B2DF8A",
+        "#33A02C",
+        "#FB9A99",
+        "#E31A1C",
+        "#FDBF6F",
+        "#FF7F00",
+        "#CAB2D6",
+        "#6A3D9A",
+        "#FFFF99",
+        "#B15928"
+      ],
+      "widgetHeaderAlignment": "LEFT",
+      "fontFamily": "Inter",
+      "widgetPadding": 8,
+      "widgetMargin": 4,
+      "widgetCornerRadius": 4,
+      "widgetShadow": 0,
+      "continuousGradient": {
+        "lightMode": {
+          "fromCategoricalIndex": 0
+        },
+        "darkMode": {
+          "fromCategoricalIndex": 0
+        }
+      },
+      "fontSettings": {
+        "base": {
+          "fontFamily": "Inter",
+          "fontColor": {
+            "light": "#1A2127",
+            "dark": "#EEF0F2"
+          },
+          "fontSize": 12,
+          "fontWeight": 400
+        },
+        "widgetTitle": {
+          "fontSize": 14,
+          "fontWeight": 500
+        },
+        "widgetDescription": {
+          "fontSize": 12,
+          "fontWeight": 400
+        },
+        "fieldTitle": {
+          "textCase": "TEXT_CASE_UPPERCASE",
+          "fontColor": {
+            "light": "#31373D",
+            "dark": "#D6D8DA"
+          },
+          "fontSize": 11,
+          "fontWeight": 400
+        },
+        "fieldValue": {
+          "fontColor": {
+            "light": "#31373D",
+            "dark": "#D6D8DA"
+          },
+          "fontSize": 11,
+          "fontWeight": 400
+        }
+      },
+      "gridLineColor": {
+        "light": "#D6D7D8",
+        "dark": "#3C3E42"
+      },
+      "axisLineColor": {
+        "light": "#B0B4B6",
+        "dark": "#555E64"
+      }
+    },
+    "applyModeEnabled": false
+  }
+}

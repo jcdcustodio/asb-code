@@ -1,0 +1,2457 @@
+{
+  "datasets": [
+    {
+      "name": "152ce493",
+      "displayName": "delivery_logistics",
+      "config": {
+        "version": "1.1",
+        "source": "asb.semantic.delivery_logistics",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          }
+        ],
+        "measures": [
+          {
+            "name": "count",
+            "expr": "COUNT(*)",
+            "comment": "Represents the total number of rows in the dataset. Use this measure to count all",
+            "displayName": "Count"
+          },
+          {
+            "name": "repeat_customer_rate",
+            "expr": "COUNT(DISTINCT CASE WHEN customer_type = 'Repeat' THEN customer_unique_id END) / NULLIF(COUNT(DISTINCT customer_unique_id), 0)",
+            "displayName": "Repeat Customer Rate"
+          },
+          {
+            "name": "late_delivery_rate",
+            "expr": "SUM(CASE WHEN is_delivered = 1 AND is_late_delivery = 1 THEN 1 ELSE 0 END) / SUM(is_delivered)",
+            "displayName": "Late Delivery Rate"
+          }
+        ]
+      }
+    },
+    {
+      "name": "49017fdd",
+      "displayName": "order_item_sales",
+      "config": {
+        "version": "1.1",
+        "source": "asb.semantic.order_item_sales",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          }
+        ],
+        "measures": [
+          {
+            "name": "count",
+            "expr": "COUNT(*)",
+            "comment": "Represents the total number of rows in the dataset. Use this measure to count all",
+            "displayName": "Count"
+          },
+          {
+            "name": "avg_order_value",
+            "expr": "SUM(source.item_price) / SUM(source.order_id)",
+            "displayName": "Average Order Value"
+          }
+        ]
+      }
+    },
+    {
+      "name": "6d9cb33e",
+      "displayName": "order_satisfaction",
+      "config": {
+        "version": "1.1",
+        "source": "asb.semantic.order_satisfaction",
+        "dimensions": [
+          {
+            "expr": "source.*"
+          }
+        ],
+        "measures": [
+          {
+            "name": "count",
+            "expr": "COUNT(*)",
+            "comment": "Represents the total number of rows in the dataset. Use this measure to count all",
+            "displayName": "Count"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ac06a55c",
+      "displayName": "ds_monthly_kpis_and_trends",
+      "queryLines": [
+        "WITH monthly_orders AS (\r\n",
+        "    SELECT \r\n",
+        "        year,\r\n",
+        "        quarter,\r\n",
+        "        year_quarter,\r\n",
+        "        month,\r\n",
+        "        month_name,\r\n",
+        "        year_month,\r\n",
+        "        COUNT(DISTINCT order_id) AS total_orders,\r\n",
+        "        COUNT(DISTINCT customer_unique_id) AS unique_customers,\r\n",
+        "        COUNT(DISTINCT CASE WHEN customer_type = 'Repeat' THEN customer_unique_id END) AS repeat_customers\r\n",
+        "    FROM asb.semantic.delivery_logistics\r\n",
+        "    GROUP BY year, quarter, year_quarter, month, month_name, year_month\r\n",
+        "),\r\n",
+        "monthly_sales AS (\r\n",
+        "    SELECT \r\n",
+        "        year_month,\r\n",
+        "        SUM(gross_item_revenue) AS gross_sales,\r\n",
+        "        SUM(item_price) AS net_sales\r\n",
+        "    FROM asb.semantic.order_item_sales\r\n",
+        "    GROUP BY year_month\r\n",
+        "),\r\n",
+        "monthly_combined AS (\r\n",
+        "    SELECT \r\n",
+        "        o.year,\r\n",
+        "        o.quarter,\r\n",
+        "        o.year_quarter,\r\n",
+        "        o.month,\r\n",
+        "        o.month_name,\r\n",
+        "        o.year_month,\r\n",
+        "        o.total_orders,\r\n",
+        "        COALESCE(s.gross_sales, 0) AS gross_sales,\r\n",
+        "        COALESCE(s.net_sales, 0) AS net_sales,\r\n",
+        "        ROUND(COALESCE(s.net_sales, 0) / NULLIF(o.total_orders, 0), 2) AS aov,\r\n",
+        "        o.unique_customers,\r\n",
+        "        ROUND((o.repeat_customers * 100.0) / NULLIF(o.unique_customers, 0), 2) AS repeat_customer_rate_pct\r\n",
+        "    FROM monthly_orders o\r\n",
+        "    LEFT JOIN monthly_sales s ON o.year_month = s.year_month\r\n",
+        ")\r\n",
+        "SELECT \r\n",
+        "    year,\r\n",
+        "    quarter,\r\n",
+        "    year_quarter,\r\n",
+        "    month,\r\n",
+        "    month_name,\r\n",
+        "    year_month,\r\n",
+        "    \r\n",
+        "    -- 1. Orders & Sales Base Metrics\r\n",
+        "    total_orders,\r\n",
+        "    gross_sales,\r\n",
+        "    net_sales,\r\n",
+        "    \r\n",
+        "    -- 2. AOV + MoM / YoY Benchmarks\r\n",
+        "    aov,\r\n",
+        "    LAG(aov, 1) OVER (ORDER BY year_month) AS prev_month_aov,\r\n",
+        "    LAG(aov, 12) OVER (ORDER BY year_month) AS prev_year_aov,\r\n",
+        "    ROUND(((aov - LAG(aov, 1) OVER (ORDER BY year_month)) / NULLIF(LAG(aov, 1) OVER (ORDER BY year_month), 0)) * 100, 2) AS aov_mom_pct,\r\n",
+        "    ROUND(((aov - LAG(aov, 12) OVER (ORDER BY year_month)) / NULLIF(LAG(aov, 12) OVER (ORDER BY year_month), 0)) * 100, 2) AS aov_yoy_pct,\r\n",
+        "\r\n",
+        "    -- 3. Unique Customers + MoM / YoY Benchmarks\r\n",
+        "    unique_customers,\r\n",
+        "    LAG(unique_customers, 1) OVER (ORDER BY year_month) AS prev_month_unique_customers,\r\n",
+        "    LAG(unique_customers, 12) OVER (ORDER BY year_month) AS prev_year_unique_customers,\r\n",
+        "    ROUND(((unique_customers - LAG(unique_customers, 1) OVER (ORDER BY year_month)) * 100.0 / NULLIF(LAG(unique_customers, 1) OVER (ORDER BY year_month), 0)), 2) AS unique_customers_mom_pct,\r\n",
+        "    ROUND(((unique_customers - LAG(unique_customers, 12) OVER (ORDER BY year_month)) * 100.0 / NULLIF(LAG(unique_customers, 12) OVER (ORDER BY year_month), 0)), 2) AS unique_customers_yoy_pct,\r\n",
+        "\r\n",
+        "    -- 4. Repeat Customer Rate + MoM / YoY Benchmarks\r\n",
+        "    repeat_customer_rate_pct,\r\n",
+        "    LAG(repeat_customer_rate_pct, 1) OVER (ORDER BY year_month) AS prev_month_repeat_rate_pct,\r\n",
+        "    LAG(repeat_customer_rate_pct, 12) OVER (ORDER BY year_month) AS prev_year_repeat_rate_pct,\r\n",
+        "    ROUND(((repeat_customer_rate_pct - LAG(repeat_customer_rate_pct, 1) OVER (ORDER BY year_month)) / NULLIF(LAG(repeat_customer_rate_pct, 1) OVER (ORDER BY year_month), 0)) * 100, 2) AS repeat_rate_mom_pct,\r\n",
+        "    ROUND(((repeat_customer_rate_pct - LAG(repeat_customer_rate_pct, 12) OVER (ORDER BY year_month)) / NULLIF(LAG(repeat_customer_rate_pct, 12) OVER (ORDER BY year_month), 0)) * 100, 2) AS repeat_rate_yoy_pct\r\n",
+        "\r\n",
+        "FROM monthly_combined\r\n",
+        "ORDER BY year_month\r\n",
+        ";"
+      ],
+      "columns": [
+        {
+          "displayName": "avg_order_value",
+          "description": "",
+          "expression": "SUM(net_sales) / NULLIF(SUM(total_orders), 0)"
+        }
+      ],
+      "catalog": "asb",
+      "schema": "semantic"
+    },
+    {
+      "name": "f24ffd44",
+      "displayName": "ds_quarterly_arpu",
+      "queryLines": [
+        "SELECT \r\n",
+        "    o.year,\r\n",
+        "    o.year_quarter,\r\n",
+        "    COALESCE(SUM(s.item_price), 0) AS net_sales,\r\n",
+        "    NULLIF(COUNT(DISTINCT o.customer_unique_id), 0) AS unique_customers,\r\n",
+        "    ROUND(net_sales / unique_customers, 2) AS arpu\r\n",
+        "FROM asb.semantic.delivery_logistics o\r\n",
+        "LEFT JOIN asb.semantic.order_item_sales s \r\n",
+        "    ON o.order_id = s.order_id\r\n",
+        "GROUP BY o.year, o.year_quarter\r\n",
+        "ORDER BY o.year, o.year_quarter\r\n",
+        ";"
+      ]
+    },
+    {
+      "name": "e817f15a",
+      "displayName": "ds_quarterly_delivery_vs_reviews",
+      "queryLines": [
+        "WITH quarterly_delivery AS (\r\n",
+        "    SELECT \r\n",
+        "        year,\r\n",
+        "        quarter,\r\n",
+        "        year_quarter,\r\n",
+        "        SUM(CASE WHEN is_delivered = 1 AND is_late_delivery = 1 THEN 1 ELSE 0 END) AS late_deliveries,\r\n",
+        "        SUM(is_delivered) AS delivered_orders,\r\n",
+        "        ROUND(\r\n",
+        "            SUM(CASE WHEN is_delivered = 1 AND is_late_delivery = 1 THEN 1 ELSE 0 END) * 100.0 / \r\n",
+        "            NULLIF(SUM(is_delivered), 0), \r\n",
+        "            2\r\n",
+        "        ) AS late_delivery_rate_pct\r\n",
+        "    FROM asb.semantic.delivery_logistics\r\n",
+        "    GROUP BY year, quarter, year_quarter\r\n",
+        "),\r\n",
+        "quarterly_reviews AS (\r\n",
+        "    SELECT \r\n",
+        "        year_quarter,\r\n",
+        "        ROUND(AVG(review_score), 2) AS avg_review_score\r\n",
+        "    FROM asb.semantic.order_satisfaction\r\n",
+        "    GROUP BY year_quarter\r\n",
+        ")\r\n",
+        "SELECT \r\n",
+        "    d.year,\r\n",
+        "    d.quarter,\r\n",
+        "    d.year_quarter,\r\n",
+        "    d.late_deliveries,\r\n",
+        "    d.delivered_orders,\r\n",
+        "    d.late_delivery_rate_pct,\r\n",
+        "    r.avg_review_score\r\n",
+        "FROM quarterly_delivery d\r\n",
+        "LEFT JOIN quarterly_reviews r ON d.year_quarter = r.year_quarter\r\n",
+        "ORDER BY d.year_quarter\r\n",
+        ";"
+      ]
+    },
+    {
+      "name": "a33ecfe0",
+      "displayName": "ds_top_10_seller_share",
+      "queryLines": [
+        "WITH filtered_seller_revenue AS (\r\n",
+        "    SELECT \r\n",
+        "        seller_id,\r\n",
+        "        SUM(item_price) AS seller_net_sales\r\n",
+        "    FROM asb.semantic.order_item_sales\r\n",
+        "    WHERE (:param_year = 'All' OR CAST(year AS STRING) = :param_year)\r\n",
+        "      AND (:param_year_quarter = 'All' OR CAST(year_quarter AS STRING) = :param_year_quarter)\r\n",
+        "      AND (:param_year_month = 'All' OR  CAST(year_month AS STRING) = :param_year_month)\r\n",
+        "    GROUP BY seller_id\r\n",
+        "),\r\n",
+        "ranked_sellers AS (\r\n",
+        "    SELECT \r\n",
+        "        seller_id,\r\n",
+        "        seller_net_sales,\r\n",
+        "        ROW_NUMBER() OVER (ORDER BY seller_net_sales DESC) AS sales_rank,\r\n",
+        "        COUNT(*) OVER () AS total_sellers_in_period\r\n",
+        "    FROM filtered_seller_revenue\r\n",
+        ")\r\n",
+        "SELECT \r\n",
+        "    seller_id,\r\n",
+        "    seller_net_sales,\r\n",
+        "    total_sellers_in_period,\r\n",
+        "    CASE \r\n",
+        "        WHEN sales_rank <= CEIL(total_sellers_in_period * 0.10) THEN seller_net_sales \r\n",
+        "        ELSE 0 \r\n",
+        "    END AS top_10_pct_sales\r\n",
+        "FROM ranked_sellers\r\n",
+        ";"
+      ],
+      "parameters": [
+        {
+          "displayName": "param_year",
+          "keyword": "param_year",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "All"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "displayName": "param_year_quarter",
+          "keyword": "param_year_quarter",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "All"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "displayName": "param_year_month",
+          "keyword": "param_year_month",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "All"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "columns": [
+        {
+          "displayName": "Percent of Sales frop Top 10% Sellers",
+          "description": "",
+          "expression": "SUM(top_10_pct_sales) / SUM(seller_net_sales)"
+        }
+      ]
+    },
+    {
+      "name": "9e23d276",
+      "displayName": "ds_seller_state_concentration",
+      "queryLines": [
+        "SELECT \r\n",
+        "    CASE i.seller_state \r\n",
+        "        WHEN 'SP' THEN 'São Paulo' \r\n",
+        "        WHEN 'RJ' THEN 'Rio de Janeiro' \r\n",
+        "        WHEN 'MG' THEN 'Minas Gerais' \r\n",
+        "        WHEN 'RS' THEN 'Rio Grande do Sul' \r\n",
+        "        WHEN 'PR' THEN 'Paraná' \r\n",
+        "        WHEN 'SC' THEN 'Santa Catarina' \r\n",
+        "        WHEN 'BA' THEN 'Bahia' \r\n",
+        "        WHEN 'DF' THEN 'Distrito Federal' \r\n",
+        "        WHEN 'ES' THEN 'Espírito Santo' \r\n",
+        "        WHEN 'GO' THEN 'Goiás' \r\n",
+        "        WHEN 'PE' THEN 'Pernambuco' \r\n",
+        "        WHEN 'CE' THEN 'Ceará' \r\n",
+        "        WHEN 'PA' THEN 'Pará' \r\n",
+        "        WHEN 'MT' THEN 'Mato Grosso' \r\n",
+        "        WHEN 'MA' THEN 'Maranhão' \r\n",
+        "        WHEN 'MS' THEN 'Mato Grosso do Sul' \r\n",
+        "        WHEN 'PB' THEN 'Paraíba' \r\n",
+        "        WHEN 'PI' THEN 'Piauí' \r\n",
+        "        WHEN 'RN' THEN 'Rio Grande do Norte' \r\n",
+        "        WHEN 'AL' THEN 'Alagoas' \r\n",
+        "        WHEN 'SE' THEN 'Sergipe' \r\n",
+        "        WHEN 'TO' THEN 'Tocantins' \r\n",
+        "        WHEN 'RO' THEN 'Rondônia' \r\n",
+        "        WHEN 'AM' THEN 'Amazonas' \r\n",
+        "        WHEN 'AC' THEN 'Acre' \r\n",
+        "        WHEN 'AP' THEN 'Amapá' \r\n",
+        "        WHEN 'RR' THEN 'Roraima' \r\n",
+        "        ELSE i.seller_state \r\n",
+        "    END AS seller_state_name,\r\n",
+        "    COUNT(DISTINCT i.seller_id) AS active_sellers, \r\n",
+        "    COUNT(DISTINCT i.order_id) AS orders_made, \r\n",
+        "    SUM(i.item_price) AS net_sales \r\n",
+        "FROM asb.semantic.order_item_sales i \r\n",
+        "LEFT JOIN asb.olist_gold.dim_sellers s \r\n",
+        "    ON i.seller_id = s.seller_id \r\n",
+        "WHERE (:param_year = 'All' OR CAST(i.year AS STRING) = :param_year)\r\n",
+        "  AND (:param_year_quarter = 'All' OR CAST(i.year_quarter AS STRING) = :param_year_quarter)\r\n",
+        "  AND (:param_year_month = 'All' OR CAST(i.year_month AS STRING) = :param_year_month)\r\n",
+        "GROUP BY i.seller_state\r\n",
+        "ORDER BY net_sales DESC\r\n",
+        ";"
+      ],
+      "parameters": [
+        {
+          "displayName": "param_year",
+          "keyword": "param_year",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "All"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "displayName": "param_year_month",
+          "keyword": "param_year_month",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "All"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "displayName": "param_year_quarter",
+          "keyword": "param_year_quarter",
+          "dataType": "STRING",
+          "defaultSelection": {
+            "values": {
+              "dataType": "STRING",
+              "values": [
+                {
+                  "value": "All"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "899849ea",
+      "displayName": "ds_poor_sellers_risk_report",
+      "queryLines": [
+        "WITH order_level_reviews AS (\r\n",
+        "    -- Normalize reviews to 1 row per order_id to prevent item-level fan-out\r\n",
+        "    SELECT \r\n",
+        "        order_id,\r\n",
+        "        AVG(review_score) AS order_review_score\r\n",
+        "    FROM asb.semantic.order_satisfaction\r\n",
+        "    GROUP BY order_id\r\n",
+        "),\r\n",
+        "seller_orders AS (\r\n",
+        "    -- Distinct seller-order grain so multi-item orders count once per seller\r\n",
+        "    SELECT DISTINCT\r\n",
+        "        i.year,\r\n",
+        "        i.year_quarter,\r\n",
+        "        i.year_month,\r\n",
+        "        i.month_name,\r\n",
+        "        i.seller_id,\r\n",
+        "        CASE i.seller_state\r\n",
+        "            WHEN 'SP' THEN 'São Paulo'\r\n",
+        "            WHEN 'RJ' THEN 'Rio de Janeiro'\r\n",
+        "            WHEN 'MG' THEN 'Minas Gerais'\r\n",
+        "            WHEN 'RS' THEN 'Rio Grande do Sul'\r\n",
+        "            WHEN 'PR' THEN 'Paraná'\r\n",
+        "            WHEN 'SC' THEN 'Santa Catarina'\r\n",
+        "            WHEN 'BA' THEN 'Bahia'\r\n",
+        "            WHEN 'DF' THEN 'Distrito Federal'\r\n",
+        "            WHEN 'ES' THEN 'Espírito Santo'\r\n",
+        "            WHEN 'GO' THEN 'Goiás'\r\n",
+        "            WHEN 'PE' THEN 'Pernambuco'\r\n",
+        "            WHEN 'CE' THEN 'Ceará'\r\n",
+        "            WHEN 'PA' THEN 'Pará'\r\n",
+        "            WHEN 'MT' THEN 'Mato Grosso'\r\n",
+        "            WHEN 'MA' THEN 'Maranhão'\r\n",
+        "            WHEN 'MS' THEN 'Mato Grosso do Sul'\r\n",
+        "            WHEN 'PB' THEN 'Paraíba'\r\n",
+        "            WHEN 'PI' THEN 'Piauí'\r\n",
+        "            WHEN 'RN' THEN 'Rio Grande do Norte'\r\n",
+        "            WHEN 'AL' THEN 'Alagoas'\r\n",
+        "            WHEN 'SE' THEN 'Sergipe'\r\n",
+        "            WHEN 'TO' THEN 'Tocantins'\r\n",
+        "            WHEN 'RO' THEN 'Rondônia'\r\n",
+        "            WHEN 'AM' THEN 'Amazonas'\r\n",
+        "            WHEN 'AC' THEN 'Acre'\r\n",
+        "            WHEN 'AP' THEN 'Amapá'\r\n",
+        "            WHEN 'RR' THEN 'Roraima'\r\n",
+        "            ELSE i.seller_state\r\n",
+        "        END AS seller_state_name,\r\n",
+        "        i.order_id,\r\n",
+        "        d.is_delivered,\r\n",
+        "        d.is_late_delivery,\r\n",
+        "        r.order_review_score\r\n",
+        "    FROM asb.semantic.order_item_sales i\r\n",
+        "    JOIN asb.semantic.delivery_logistics d ON i.order_id = d.order_id\r\n",
+        "    LEFT JOIN order_level_reviews r ON i.order_id = r.order_id\r\n",
+        ")\r\n",
+        "SELECT \r\n",
+        "    year,\r\n",
+        "    year_quarter,\r\n",
+        "    year_month,\r\n",
+        "    month_name,\r\n",
+        "    LEFT(seller_id, 5) AS seller_short_id,\r\n",
+        "    seller_id,\r\n",
+        "    seller_state_name,\r\n",
+        "    COUNT(DISTINCT order_id) AS orders_received,\r\n",
+        "    ROUND(\r\n",
+        "        SUM(CASE WHEN is_delivered = 1 AND is_late_delivery = 1 THEN 1 ELSE 0 END) / \r\n",
+        "        NULLIF(SUM(is_delivered), 0), \r\n",
+        "        4\r\n",
+        "    ) AS late_delivery_rate,\r\n",
+        "    ROUND(AVG(order_review_score), 2) AS avg_review_score\r\n",
+        "FROM seller_orders\r\n",
+        "GROUP BY year, year_quarter, year_month, month_name, seller_id, seller_state_name\r\n",
+        "HAVING AVG(order_review_score) < 2.5\r\n",
+        "ORDER BY orders_received DESC\r\n",
+        ";"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "771dfd47",
+      "displayName": "revenue",
+      "layout": [
+        {
+          "widget": {
+            "name": "total-orders",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "152ce493",
+                  "fields": [
+                    {
+                      "name": "count(order_id)",
+                      "expression": "COUNT(`order_id`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Total Orders",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "count(order_id)",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    },
+                    "significantFigures": {
+                      "type": "all"
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "total-gross-sales",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "49017fdd",
+                  "fields": [
+                    {
+                      "name": "sum(gross_item_revenue)",
+                      "expression": "SUM(`gross_item_revenue`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Total Gross Sales",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(gross_item_revenue)",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "BRL",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 3
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 0,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "total-net-sales",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "49017fdd",
+                  "fields": [
+                    {
+                      "name": "sum(item_price)",
+                      "expression": "SUM(`item_price`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Total Net Sales",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "sum(item_price)",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "BRL",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 3
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 0,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "d27bb045",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ac06a55c",
+                  "fields": [
+                    {
+                      "name": "measure(avg_order_value)",
+                      "expression": "MEASURE(`avg_order_value`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Average Order Value",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_order_value)",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "BRL",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "f4f0d5fc",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "152ce493",
+                  "fields": [
+                    {
+                      "name": "countdistinct(customer_unique_id)",
+                      "expression": "COUNT(DISTINCT `customer_unique_id`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Unique Customers",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "countdistinct(customer_unique_id)"
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 3,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "56669cd5",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "152ce493",
+                  "fields": [
+                    {
+                      "name": "measure(repeat_customer_rate)",
+                      "expression": "MEASURE(`repeat_customer_rate`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Repeat Customer Rate",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(repeat_customer_rate)",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 3,
+            "width": 4,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "monthly-trend-net-sales-orders",
+            "queries": [
+              {
+                "name": "combo_primary_1",
+                "query": {
+                  "datasetName": "ac06a55c",
+                  "fields": [
+                    {
+                      "name": "year_month",
+                      "expression": "`year_month`"
+                    },
+                    {
+                      "name": "sum(net_sales)",
+                      "expression": "SUM(`net_sales`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`year_month` IS NULL OR `year_month` NOT IN ('2018-10', '2018-09')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "combo_secondary_1",
+                "query": {
+                  "datasetName": "ac06a55c",
+                  "fields": [
+                    {
+                      "name": "year_month",
+                      "expression": "`year_month`"
+                    },
+                    {
+                      "name": "sum(total_orders)",
+                      "expression": "SUM(`total_orders`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`year_month` IS NULL OR `year_month` NOT IN ('2018-10', '2018-09')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "combo_base",
+                "query": {
+                  "datasetName": "ac06a55c",
+                  "fields": [
+                    {
+                      "name": "year_month",
+                      "expression": "`year_month`"
+                    },
+                    {
+                      "name": "sum(unique_customers)",
+                      "expression": "SUM(`unique_customers`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`year_month` IS NULL OR `year_month` NOT IN ('2018-10', '2018-09')"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Monthly Trend of Net Sales and Total Orders",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "combo",
+              "encodings": {
+                "x": {
+                  "fieldName": "year_month",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "displayName": "Year-Month",
+                  "scale": {
+                    "type": "categorical",
+                    "sort": {
+                      "by": "custom-order",
+                      "orderedValues": [
+                        "2016-09",
+                        "2016-10",
+                        "2016-12",
+                        "2017-01",
+                        "2017-02",
+                        "2017-03",
+                        "2017-04",
+                        "2017-05",
+                        "2017-06",
+                        "2017-07",
+                        "2017-08",
+                        "2017-09",
+                        "2017-10",
+                        "2017-11",
+                        "2017-12",
+                        "2018-01",
+                        "2018-02",
+                        "2018-03",
+                        "2018-04",
+                        "2018-05",
+                        "2018-06",
+                        "2018-07",
+                        "2018-08",
+                        "2018-09",
+                        "2018-10"
+                      ]
+                    }
+                  }
+                },
+                "y": {
+                  "primary": {
+                    "scale": {
+                      "type": "quantitative"
+                    },
+                    "layers": [
+                      {
+                        "visual": "bar",
+                        "encodings": {
+                          "value": {
+                            "fields": [
+                              {
+                                "fieldName": "sum(net_sales)",
+                                "displayName": "Total Net Sales"
+                              }
+                            ]
+                          },
+                          "color": {
+                            "legend": {
+                              "position": "top"
+                            }
+                          },
+                          "label": {
+                            "show": false
+                          }
+                        },
+                        "queryName": "combo_primary_1"
+                      }
+                    ],
+                    "format": {
+                      "type": "number-currency",
+                      "currencyCode": "BRL",
+                      "abbreviation": "compact",
+                      "decimalPlaces": {
+                        "type": "max",
+                        "places": 2
+                      }
+                    },
+                    "axis": {
+                      "hideTitle": true
+                    }
+                  },
+                  "secondary": {
+                    "scale": {
+                      "type": "quantitative"
+                    },
+                    "layers": [
+                      {
+                        "visual": "line",
+                        "mark": {
+                          "lineShape": "smooth"
+                        },
+                        "encodings": {
+                          "value": {
+                            "fields": [
+                              {
+                                "fieldName": "sum(total_orders)",
+                                "displayName": "Total Orders"
+                              }
+                            ]
+                          },
+                          "color": {
+                            "legend": {
+                              "position": "top"
+                            }
+                          },
+                          "label": {
+                            "show": false
+                          }
+                        },
+                        "queryName": "combo_secondary_1"
+                      }
+                    ],
+                    "axis": {
+                      "hideTitle": true
+                    },
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "max",
+                        "places": 2
+                      }
+                    }
+                  }
+                },
+                "extra": [
+                  {
+                    "fieldName": "sum(unique_customers)",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "max",
+                        "places": 2
+                      }
+                    },
+                    "displayName": "Unique Customers"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "quarterly-avg-revenue-per-user",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "f24ffd44",
+                  "fields": [
+                    {
+                      "name": "arpu",
+                      "expression": "`arpu`"
+                    },
+                    {
+                      "name": "year_quarter",
+                      "expression": "`year_quarter`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "IN_RANGE(`arpu`, 1BD, NULL)"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Quarterly Average Revenue Per User",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "arpu",
+                  "format": {
+                    "type": "number-currency",
+                    "currencyCode": "BRL",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    },
+                    "significantFigures": {
+                      "type": "all"
+                    }
+                  },
+                  "axis": {
+                    "hideTitle": true,
+                    "hideGrid": false,
+                    "hideLabels": false
+                  },
+                  "displayName": "Average Revenue Per User",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "year_quarter",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "displayName": "Year-Quarter",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "label": {
+                  "show": false,
+                  "showTotal": true
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 6,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "0d2a42e9",
+      "displayName": "Global Filters",
+      "layout": [
+        {
+          "widget": {
+            "name": "bf93d8ff",
+            "queries": [
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53eda614b4ad9eebf760136874_year",
+                "query": {
+                  "datasetName": "152ce493",
+                  "fields": [
+                    {
+                      "name": "year",
+                      "expression": "`year`"
+                    },
+                    {
+                      "name": "year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53f0561e098f358fdd71879256_year",
+                "query": {
+                  "datasetName": "49017fdd",
+                  "fields": [
+                    {
+                      "name": "year",
+                      "expression": "`year`"
+                    },
+                    {
+                      "name": "year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53f77b1ad7b9fe24bb3458e944_year",
+                "query": {
+                  "datasetName": "6d9cb33e",
+                  "fields": [
+                    {
+                      "name": "year",
+                      "expression": "`year`"
+                    },
+                    {
+                      "name": "year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1dea0ee8e17249b24cfb519ce4805_year",
+                "query": {
+                  "datasetName": "ac06a55c",
+                  "fields": [
+                    {
+                      "name": "year",
+                      "expression": "`year`"
+                    },
+                    {
+                      "name": "year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1deadace51da5b77186182816d762_year",
+                "query": {
+                  "datasetName": "f24ffd44",
+                  "fields": [
+                    {
+                      "name": "year",
+                      "expression": "`year`"
+                    },
+                    {
+                      "name": "year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1deb2c35010f29934c1dd34660ff7_year",
+                "query": {
+                  "datasetName": "e817f15a",
+                  "fields": [
+                    {
+                      "name": "year",
+                      "expression": "`year`"
+                    },
+                    {
+                      "name": "year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1debd6ea61d9b88e0fd68ad811f38_year",
+                "query": {
+                  "datasetName": "899849ea",
+                  "fields": [
+                    {
+                      "name": "year",
+                      "expression": "`year`"
+                    },
+                    {
+                      "name": "year_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "year",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53eda614b4ad9eebf760136874_year"
+                  },
+                  {
+                    "fieldName": "year",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53f0561e098f358fdd71879256_year"
+                  },
+                  {
+                    "fieldName": "year",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53f77b1ad7b9fe24bb3458e944_year"
+                  },
+                  {
+                    "fieldName": "year",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1dea0ee8e17249b24cfb519ce4805_year"
+                  },
+                  {
+                    "fieldName": "year",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1deadace51da5b77186182816d762_year"
+                  },
+                  {
+                    "fieldName": "year",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1deb2c35010f29934c1dd34660ff7_year"
+                  },
+                  {
+                    "fieldName": "year",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1debd6ea61d9b88e0fd68ad811f38_year"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "1e15eb5e",
+            "queries": [
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53eda614b4ad9eebf760136874_year_month",
+                "query": {
+                  "datasetName": "152ce493",
+                  "fields": [
+                    {
+                      "name": "year_month",
+                      "expression": "`year_month`"
+                    },
+                    {
+                      "name": "year_month_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53f0561e098f358fdd71879256_year_month",
+                "query": {
+                  "datasetName": "49017fdd",
+                  "fields": [
+                    {
+                      "name": "year_month",
+                      "expression": "`year_month`"
+                    },
+                    {
+                      "name": "year_month_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53f77b1ad7b9fe24bb3458e944_year_month",
+                "query": {
+                  "datasetName": "6d9cb33e",
+                  "fields": [
+                    {
+                      "name": "year_month",
+                      "expression": "`year_month`"
+                    },
+                    {
+                      "name": "year_month_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1dea0ee8e17249b24cfb519ce4805_year_month",
+                "query": {
+                  "datasetName": "ac06a55c",
+                  "fields": [
+                    {
+                      "name": "year_month",
+                      "expression": "`year_month`"
+                    },
+                    {
+                      "name": "year_month_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1debd6ea61d9b88e0fd68ad811f38_year_month",
+                "query": {
+                  "datasetName": "899849ea",
+                  "fields": [
+                    {
+                      "name": "year_month",
+                      "expression": "`year_month`"
+                    },
+                    {
+                      "name": "year_month_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "year_month",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53eda614b4ad9eebf760136874_year_month"
+                  },
+                  {
+                    "fieldName": "year_month",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53f0561e098f358fdd71879256_year_month"
+                  },
+                  {
+                    "fieldName": "year_month",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53f77b1ad7b9fe24bb3458e944_year_month"
+                  },
+                  {
+                    "fieldName": "year_month",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1dea0ee8e17249b24cfb519ce4805_year_month"
+                  },
+                  {
+                    "fieldName": "year_month",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1debd6ea61d9b88e0fd68ad811f38_year_month"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 1,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "2d43d16f",
+            "queries": [
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53eda614b4ad9eebf760136874_year_quarter",
+                "query": {
+                  "datasetName": "152ce493",
+                  "fields": [
+                    {
+                      "name": "year_quarter",
+                      "expression": "`year_quarter`"
+                    },
+                    {
+                      "name": "year_quarter_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53f0561e098f358fdd71879256_year_quarter",
+                "query": {
+                  "datasetName": "49017fdd",
+                  "fields": [
+                    {
+                      "name": "year_quarter",
+                      "expression": "`year_quarter`"
+                    },
+                    {
+                      "name": "year_quarter_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53f77b1ad7b9fe24bb3458e944_year_quarter",
+                "query": {
+                  "datasetName": "6d9cb33e",
+                  "fields": [
+                    {
+                      "name": "year_quarter",
+                      "expression": "`year_quarter`"
+                    },
+                    {
+                      "name": "year_quarter_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1dea0ee8e17249b24cfb519ce4805_year_quarter",
+                "query": {
+                  "datasetName": "ac06a55c",
+                  "fields": [
+                    {
+                      "name": "year_quarter",
+                      "expression": "`year_quarter`"
+                    },
+                    {
+                      "name": "year_quarter_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1deadace51da5b77186182816d762_year_quarter",
+                "query": {
+                  "datasetName": "f24ffd44",
+                  "fields": [
+                    {
+                      "name": "year_quarter",
+                      "expression": "`year_quarter`"
+                    },
+                    {
+                      "name": "year_quarter_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1deb2c35010f29934c1dd34660ff7_year_quarter",
+                "query": {
+                  "datasetName": "e817f15a",
+                  "fields": [
+                    {
+                      "name": "year_quarter",
+                      "expression": "`year_quarter`"
+                    },
+                    {
+                      "name": "year_quarter_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1debd6ea61d9b88e0fd68ad811f38_year_quarter",
+                "query": {
+                  "datasetName": "899849ea",
+                  "fields": [
+                    {
+                      "name": "year_quarter",
+                      "expression": "`year_quarter`"
+                    },
+                    {
+                      "name": "year_quarter_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "year_quarter",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53eda614b4ad9eebf760136874_year_quarter"
+                  },
+                  {
+                    "fieldName": "year_quarter",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53f0561e098f358fdd71879256_year_quarter"
+                  },
+                  {
+                    "fieldName": "year_quarter",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1de53f77b1ad7b9fe24bb3458e944_year_quarter"
+                  },
+                  {
+                    "fieldName": "year_quarter",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1dea0ee8e17249b24cfb519ce4805_year_quarter"
+                  },
+                  {
+                    "fieldName": "year_quarter",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1deadace51da5b77186182816d762_year_quarter"
+                  },
+                  {
+                    "fieldName": "year_quarter",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1deb2c35010f29934c1dd34660ff7_year_quarter"
+                  },
+                  {
+                    "fieldName": "year_quarter",
+                    "queryName": "dashboards/01f1de531cc91b3f92f7bf28c1d0617c/datasets/01f1debd6ea61d9b88e0fd68ad811f38_year_quarter"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 1,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_GLOBAL_FILTERS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "6eb51fad",
+      "displayName": "delivery",
+      "layout": [
+        {
+          "widget": {
+            "name": "late-delivery-rate1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "152ce493",
+                  "fields": [
+                    {
+                      "name": "sum(is_delivered)",
+                      "expression": "SUM(`is_delivered`)"
+                    },
+                    {
+                      "name": "measure(late_delivery_rate)",
+                      "expression": "MEASURE(`late_delivery_rate`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showDescription": false,
+                "showTitle": true,
+                "title": {
+                  "value": "Late Delivery Rate",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(late_delivery_rate)",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  }
+                },
+                "target": {
+                  "fieldName": "sum(is_delivered)",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "formatTemplate": "Delivered Orders: {{ @formatted }}"
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "avg-review-score",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "6d9cb33e",
+                  "fields": [
+                    {
+                      "name": "avg(review_score)",
+                      "expression": "AVG(`review_score`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showDescription": false,
+                "showTitle": true,
+                "title": {
+                  "value": "Average Review Score\n<p>&nbsp;</p>\n",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "avg(review_score)",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "compact",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "formatTemplate": "{{ @formatted }} / 5"
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 3,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "quarterly-trend-late-delivery-rate-average-review-score",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "e817f15a",
+                  "fields": [
+                    {
+                      "name": "year_quarter",
+                      "expression": "`year_quarter`"
+                    },
+                    {
+                      "name": "late_delivery_rate_pct",
+                      "expression": "`late_delivery_rate_pct`"
+                    },
+                    {
+                      "name": "avg_review_score",
+                      "expression": "`avg_review_score`"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`year_quarter` IS NULL OR `year_quarter` NOT IN ('2018-Q4')"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Quarterly Trend of Late Delivery Rate and Average Review Score",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "area",
+              "encodings": {
+                "x": {
+                  "fieldName": "year_quarter",
+                  "axis": {
+                    "hideTitle": true
+                  },
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "primary": {
+                    "fields": [
+                      {
+                        "fieldName": "late_delivery_rate_pct",
+                        "displayName": "Late Delivery Rate"
+                      }
+                    ],
+                    "scale": {
+                      "type": "quantitative"
+                    },
+                    "axis": {
+                      "hideTitle": true
+                    }
+                  },
+                  "secondary": {
+                    "fields": [
+                      {
+                        "fieldName": "avg_review_score",
+                        "displayName": "Average Review Score"
+                      }
+                    ],
+                    "scale": {
+                      "type": "quantitative"
+                    },
+                    "axis": {
+                      "hideTitle": true
+                    }
+                  }
+                },
+                "color": {
+                  "legend": {
+                    "hide": false,
+                    "hideTitle": false,
+                    "position": "top"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 9,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "02109feb",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "152ce493",
+                  "fields": [
+                    {
+                      "name": "customer_state",
+                      "expression": "`customer_state`"
+                    },
+                    {
+                      "name": "count(order_id)",
+                      "expression": "COUNT(`order_id`)"
+                    }
+                  ],
+                  "disaggregated": false,
+                  "orders": [
+                    {
+                      "direction": "DESC",
+                      "expression": "COUNT(`order_id`)"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": false
+              },
+              "version": 2,
+              "rowsPerPage": 10,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "customer_state",
+                    "displayName": "State"
+                  },
+                  {
+                    "fieldName": "count(order_id)",
+                    "contentAlignment": "left",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "displayName": "Total Orders"
+                  }
+                ],
+                "rowOrder": [
+                  {
+                    "by": "column-reversed",
+                    "field": {
+                      "index": 1
+                    }
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 6,
+            "width": 4,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "4243f719",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "152ce493",
+                  "fields": [
+                    {
+                      "name": "measure(late_delivery_rate)",
+                      "expression": "MEASURE(`late_delivery_rate`)"
+                    },
+                    {
+                      "name": "countdistinct(order_id)",
+                      "expression": "COUNT(DISTINCT `order_id`)"
+                    },
+                    {
+                      "name": "customer_state",
+                      "expression": "`customer_state`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Late Delivery Rate by State",
+                  "fields": []
+                }
+              },
+              "version": 1,
+              "mark": {
+                "opacity": 0.85
+              },
+              "widgetType": "choropleth-map",
+              "encodings": {
+                "color": {
+                  "fieldName": "measure(late_delivery_rate)",
+                  "format": {
+                    "decimalPlaces": {
+                      "places": 2,
+                      "type": "max"
+                    },
+                    "type": "number-percent"
+                  },
+                  "legend": {
+                    "hide": false,
+                    "hideTitle": true,
+                    "position": "bottom"
+                  },
+                  "displayName": "Late Delivery Rate",
+                  "scale": {
+                    "type": "quantitative",
+                    "colorRamp": {
+                      "mode": "scheme",
+                      "scheme": "viridis"
+                    }
+                  }
+                },
+                "extra": [
+                  {
+                    "fieldName": "countdistinct(order_id)",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "max",
+                        "places": 2
+                      }
+                    },
+                    "displayName": "Total Orders"
+                  }
+                ],
+                "region": {
+                  "regionType": "mapbox-v4-admin",
+                  "admin0": {
+                    "type": "value",
+                    "value": "Brasil",
+                    "geographicRole": "admin0-name"
+                  },
+                  "admin1": {
+                    "fieldName": "customer_state",
+                    "type": "field",
+                    "geographicRole": "admin1-name"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 8,
+            "height": 8
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "10f86f5b",
+      "displayName": "seller",
+      "layout": [
+        {
+          "widget": {
+            "name": "a0bf6ca1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "9e23d276",
+                  "fields": [
+                    {
+                      "name": "sum(active_sellers)",
+                      "expression": "SUM(`active_sellers`)"
+                    },
+                    {
+                      "name": "seller_state_name",
+                      "expression": "`seller_state_name`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Active Sellers by State",
+                  "fields": []
+                }
+              },
+              "version": 1,
+              "mark": {
+                "opacity": 0.85
+              },
+              "widgetType": "choropleth-map",
+              "encodings": {
+                "color": {
+                  "fieldName": "sum(active_sellers)",
+                  "legend": {
+                    "hide": false,
+                    "hideTitle": true,
+                    "position": "bottom"
+                  },
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  },
+                  "displayName": "Total Active Sellers",
+                  "scale": {
+                    "type": "quantitative",
+                    "colorRamp": {
+                      "mode": "scheme",
+                      "scheme": "viridis"
+                    }
+                  }
+                },
+                "region": {
+                  "regionType": "mapbox-v4-admin",
+                  "admin0": {
+                    "type": "value",
+                    "value": "Brasil",
+                    "geographicRole": "admin0-name"
+                  },
+                  "admin1": {
+                    "fieldName": "seller_state_name",
+                    "type": "field",
+                    "geographicRole": "admin1-name"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 6,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "total-active-sellers",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "49017fdd",
+                  "fields": [
+                    {
+                      "name": "countdistinct(seller_id)",
+                      "expression": "COUNT(DISTINCT `seller_id`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Total Active Sellers",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "countdistinct(seller_id)",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "percent-sales-top-10-percent-sellers",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "a33ecfe0",
+                  "fields": [
+                    {
+                      "name": "measure(Percent of Sales frop Top 10% Sellers)",
+                      "expression": "MEASURE(`Percent of Sales frop Top 10% Sellers`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Percent of Sales from Top 10% Sellers",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(Percent of Sales frop Top 10% Sellers)",
+                  "format": {
+                    "type": "number-percent",
+                    "decimalPlaces": {
+                      "type": "max",
+                      "places": 2
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 3,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "poor-sellers-risk-report",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "899849ea",
+                  "fields": [
+                    {
+                      "name": "seller_short_id",
+                      "expression": "`seller_short_id`"
+                    },
+                    {
+                      "name": "seller_state_name",
+                      "expression": "`seller_state_name`"
+                    },
+                    {
+                      "name": "orders_received",
+                      "expression": "`orders_received`"
+                    },
+                    {
+                      "name": "late_delivery_rate",
+                      "expression": "`late_delivery_rate`"
+                    },
+                    {
+                      "name": "avg_review_score",
+                      "expression": "`avg_review_score`"
+                    }
+                  ],
+                  "disaggregated": true,
+                  "orders": [
+                    {
+                      "direction": "DESC",
+                      "expression": "`orders_received`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "showDescription": true,
+                "title": {
+                  "value": "Poor Sellers Risk Report",
+                  "fields": []
+                },
+                "description": {
+                  "value": "Sellers with review score lower than 2.5",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "rowsPerPage": 10,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "seller_short_id",
+                    "displayName": "Seller"
+                  },
+                  {
+                    "fieldName": "seller_state_name",
+                    "displayName": "State"
+                  },
+                  {
+                    "fieldName": "orders_received",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "contentAlignment": "left",
+                    "displayName": "Orders Received"
+                  },
+                  {
+                    "fieldName": "late_delivery_rate",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 2
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "contentAlignment": "left",
+                    "displayName": "Late Delivery Rate"
+                  },
+                  {
+                    "fieldName": "avg_review_score",
+                    "contentAlignment": "left",
+                    "displayName": "Average Review Score"
+                  }
+                ],
+                "rowOrder": [
+                  {
+                    "by": "column-reversed",
+                    "field": {
+                      "index": 2
+                    }
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 12,
+            "height": 8
+          }
+        },
+        {
+          "widget": {
+            "name": "seller-concentration-by-state",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "9e23d276",
+                  "fields": [
+                    {
+                      "name": "seller_state_name",
+                      "expression": "`seller_state_name`"
+                    },
+                    {
+                      "name": "orders_made",
+                      "expression": "`orders_made`"
+                    },
+                    {
+                      "name": "net_sales",
+                      "expression": "`net_sales`"
+                    }
+                  ],
+                  "disaggregated": true,
+                  "orders": [
+                    {
+                      "direction": "DESC",
+                      "expression": "`orders_made`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Seller Concentration by State",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "seller_state_name",
+                    "displayName": "State"
+                  },
+                  {
+                    "fieldName": "orders_made",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "contentAlignment": "left",
+                    "displayName": "Orders Made"
+                  },
+                  {
+                    "fieldName": "net_sales",
+                    "format": {
+                      "type": "number-currency",
+                      "currencyCode": "BRL",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 2
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "contentAlignment": "left",
+                    "displayName": "Net Sales"
+                  }
+                ],
+                "rowOrder": [
+                  {
+                    "by": "column-reversed",
+                    "field": {
+                      "index": 1
+                    }
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 6,
+            "height": 11
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}
