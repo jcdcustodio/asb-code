@@ -1,0 +1,28 @@
+[project]
+name = "asb-ai"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "beautifulsoup4>=4.15.0",
+    "ijson>=3.6.0",
+    "numpy>=2.5.4",
+    "ollama>=0.6.3",
+    "pandas>=3.1.1",
+    "pypdf>=7.0.1",
+    "python-docx>=1.2.0",
+]
+
+[dependency-groups]
+dev = [
+    "ensurepath>=0.2.6",
+    "ipykernel>=7.4.0",
+    "mypy>=2.4.1",
+    "pytest>=9.2.0",
+]
+
+[tool.uv]
+python-preference = "managed"
+default-groups = "all"
+
+[tool.ruff.lint]
+ignore = ["F401", "F403", "F405"]
