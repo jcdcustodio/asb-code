@@ -16,8 +16,6 @@ dependencies = [
 dev = [
     "ensurepath>=0.2.6",
     "ipykernel>=7.4.0",
-    "mypy>=2.4.1",
-    "pytest>=9.2.0",
 ]
 
 [tool.uv]
